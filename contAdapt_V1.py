@@ -718,36 +718,42 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
         
         # for both orientations at each polarity
         a1=np.abs(np.sin(shiftOrientation[i] - boundaryOrientation[0,0]))
-        currentBoundary1[stimarea_x[0]:stimarea_x[-1]:1, stimarea_y[0]:stimarea_y[-1]:1] = a1*(O2[p1[0]:p1[-1]:1,q1[0]:q1[-1]:1,0] + O2[p2[0]:p2[-1]:1,q2[0]:q2[-1]:1,0] )
+        currentBoundary1[stimarea_x[0]:stimarea_x[-1]+1:1, stimarea_y[0]:stimarea_y[-1]+1:1] = a1*(O2[p1[0]:p1[-1]+1:1,q1[0]:q1[-1]+1:1,0] + O2[p2[0]:p2[-1]+1:1,q2[0]:q2[-1]+1:1,0] )
         
         a2=np.abs(np.sin(shiftOrientation[i] - boundaryOrientation[0,1]))
-        currentBoundary2[stimarea_x[0]:stimarea_x[-1]:1, stimarea_y[0]:stimarea_y[-1]:1] = a2*(O2[p1[0]:p1[-1]:1,q1[0]:q1[-1]:1,1] + O2[p2[0]:p2[-1]:1,q2[0]:q2[-1]:1,1] )
+        currentBoundary2[stimarea_x[0]:stimarea_x[-1]+1:1, stimarea_y[0]:stimarea_y[-1]+1:1] = a2*(O2[p1[0]:p1[-1]+1:1,q1[0]:q1[-1]+1:1,1] + O2[p2[0]:p2[-1]+1:1,q2[0]:q2[-1]+1:1,1] )
         
         currentBoundary=currentBoundary1+currentBoundary2
         a = currentBoundary
         a[a>0] = 1
-        a1=dummy[stimarea_x[0]:stimarea_x[-1]:1, stimarea_y[0]:stimarea_y[-1]:1]
-        a2=    a[stimarea_x[0]:stimarea_x[-1]:1, stimarea_y[0]:stimarea_y[-1]:1]
+        a1=dummy[stimarea_x[0]:stimarea_x[-1]+1:1, stimarea_y[0]:stimarea_y[-1]+1:1]
+        a2=    a[stimarea_x[0]:stimarea_x[-1]+1:1, stimarea_y[0]:stimarea_y[-1]+1:1]
         
-        P[stimarea_x[0]:stimarea_x[-1]:1, stimarea_y[0]:stimarea_y[-1]:1,i] =   a1- a2
-    
-    
+        P[stimarea_x[0]:stimarea_x[-1]+1:1, stimarea_y[0]:stimarea_y[-1]+1:1,i] =   a1- a2
+            
     # find FIDOs and average within them
-    FIDO = np.zeros((sX, sY))
+    FIDO_ini = np.zeros((sX, sY))
+    oldFIDO = np.zeros((sX, sY))
     
     # unique number for each cell in the FIDO
     for i in np.arange(0,sX):
         for j in np.arange(0,sY):
-            FIDO[i,j] = i+ j*thint[0]
-            
+            FIDO_ini[i,j] = (i+1)+ (j+1)*thint[0]  
+    
     # Grow each FIDO so end up with distinct domains with a common assigned number
-    oldFIDO = np.zeros((sX, sY))
-    while np.array_equal(oldFIDO, FIDO) ==0:
-        oldFIDO = FIDO;
-        for i in np.arange(0,4):
-            p = stimarea_x + shift[i,0] 
-            q = stimarea_y + shift[i,1] 
-            FIDO[stimarea_x[0]:stimarea_x[-1]:1, stimarea_y[0]:stimarea_y[-1]:1] = np.maximum(FIDO[stimarea_x[0]:stimarea_x[-1]:1, stimarea_y[0]:stimarea_y[-1]:1], FIDO[p[0]:p[-1]:1,q[0]:q[-1]:1]*P[stimarea_x[0]:stimarea_x[-1]:1, stimarea_y[0]:stimarea_y[-1]:1,i])
+    FIDO_edit=FIDO_ini
+    n = 500 # optimization parameter, number of growth steps
+    counter = np.zeros(n)
+    for n in np.arange(1,500):
+        oldFIDO=FIDO_edit
+        FIDO_edit[1:199, 1:199] = np.maximum(FIDO_edit[1:199, 1:199], FIDO_edit[1-1:199-1,1:199]*P[1:199, 1:199,0] ) 
+        FIDO_edit[1:199, 1:199] = np.maximum(FIDO_edit[1:199, 1:199], FIDO_edit[1+1:199+1,1:199]*P[1:199, 1:199,1] ) 
+        FIDO_edit[1:199, 1:199] = np.maximum(FIDO_edit[1:199, 1:199], FIDO_edit[1:199,1-1:199-1]*P[1:199, 1:199,2] ) 
+        FIDO_edit[1:199, 1:199] = np.maximum(FIDO_edit[1:199, 1:199], FIDO_edit[1:199,1+1:199+1]*P[1:199, 1:199,3] ) 
+        counter[n] = (np.array_equal(oldFIDO, FIDO_edit) == 0)
+        
+    
+    FIDO=FIDO_edit    
     
     # input is color signals
     WBColor = image_edit.im_cropping(wb, PaddingSize)
