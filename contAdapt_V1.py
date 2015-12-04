@@ -10,12 +10,10 @@ Translated Python Version of Gregory Francis' contour adaptation
 import numpy as np
 import math
 import os
-from scipy.ndimage.measurements import mean as labeled_mean
 import scipy
 import matplotlib.pyplot as plt
-
-# Side functions
-import image_edit
+from scipy import signal
+import image_edit # Side functions
 
 # Code to make GIFs or make PNGS in file
 makeAnimatedGifs=0 # 0- make PNGs, 1- make GIFs
@@ -102,8 +100,7 @@ Conditions = ['Crosses', 'Blob', 'SizeMatch', 'Bipartite', 'Pyramids',
 
 #for condition in np.arange(1,12):
 # Only consider single condition for speed
-condition = 10
-
+condition = 0
 print "Simulation condition : ", Conditions[condition]
 
 # Create directory for results
@@ -573,18 +570,10 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
     wb2 = image_edit.im_padding(wb, PaddingSize, PaddingColor)
     
     # convolution
-    
-    # This method replicates MATLABS conv2 function - but is slow
-    OnOff_Excite =  image_edit.conv2(wb2, C, mode='same') # loses imaginary components?
-    OnOff_Inhibit = image_edit.conv2(wb2, E, mode='same')
-    OffOn_Excite =  image_edit.conv2(wb2, E, mode='same')
-    OffOn_Inhibit = image_edit.conv2(wb2, C, mode='same')
-    
-    # Faster "Raw" Version of Convolution
-    #    OnOff_Excite =  np.fft.irfft2(np.fft.rfft2(wb2) * np.fft.rfft2(C, wb2.shape))
-    #    OnOff_Inhibit = np.fft.irfft2(np.fft.rfft2(wb2) * np.fft.rfft2(E, wb2.shape))
-    #    OffOn_Excite =  np.fft.irfft2(np.fft.rfft2(wb2) * np.fft.rfft2(E, wb2.shape))
-    #    OffOn_Inhibit = np.fft.irfft2(np.fft.rfft2(wb2) * np.fft.rfft2(C, wb2.shape))
+    OnOff_Excite =   image_edit.conv2(wb2,C)
+    OnOff_Inhibit =  image_edit.conv2(wb2,E)
+    OffOn_Excite =   image_edit.conv2(wb2,E)
+    OffOn_Inhibit =  image_edit.conv2(wb2,C)
     
     # shunting parameters
     paramA = 50 # 1 
@@ -614,16 +603,11 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
     ################################ SIMPLE CELL ############################## 
     # Orientations are only based on inputs from the white-black color channel
     
-    #    y_pos_1 = np.abs(np.fft.irfft2(np.fft.rfft2(LGNwb) * np.fft.rfft2(F[:,:,0], LGNwb.shape)))
-    #    y_pos_2 = np.abs(np.fft.irfft2(np.fft.rfft2(LGNwb) * np.fft.rfft2(F[:,:,1], LGNwb.shape)))
-    #    y_pos_3 = np.abs(np.fft.irfft2(np.fft.rfft2(LGNwb) * np.fft.rfft2(F[:,:,2], LGNwb.shape)))
-    #    y_pos_4 = np.abs(np.fft.irfft2(np.fft.rfft2(LGNwb) * np.fft.rfft2(F[:,:,3], LGNwb.shape)))
-    
-    y_pos_1 = np.abs(image_edit.conv2(LGNwb, F[:,:,0], mode='same')) # loses imaginary components?
-    y_pos_2 = np.abs(image_edit.conv2(LGNwb, F[:,:,1], mode='same'))
-    y_pos_3 = np.abs(image_edit.conv2(LGNwb, F[:,:,2], mode='same'))
-    y_pos_4 = np.abs(image_edit.conv2(LGNwb, F[:,:,3], mode='same'))  
-    
+    y_pos_1 = np.abs(image_edit.conv2(LGNwb, F[:,:,0])) # loses imaginary components?
+    y_pos_2 = np.abs(image_edit.conv2(LGNwb, F[:,:,1]))
+    y_pos_3 = np.abs(image_edit.conv2(LGNwb, F[:,:,2]))
+    y_pos_4 = np.abs(image_edit.conv2(LGNwb, F[:,:,3]))  
+        
     y_crop_1 = image_edit.im_cropping(y_pos_1, PaddingSize)
     y_crop_2 = image_edit.im_cropping(y_pos_2, PaddingSize) 
     y_crop_3 = image_edit.im_cropping(y_pos_3, PaddingSize) 
@@ -766,14 +750,14 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
     # Grow each FIDO so end up with distinct domains with a common assigned number
     FIDO_edit=FIDO_ini
     n = 500 # optimization parameter, number of growth steps
-    counter = np.zeros(n)
+    #counter = np.zeros(n)
     for n in np.arange(1,500):
         oldFIDO=FIDO_edit
         FIDO_edit[1:199, 1:199] = np.maximum(FIDO_edit[1:199, 1:199], FIDO_edit[1-1:199-1,1:199]*P[1:199, 1:199,0] ) 
         FIDO_edit[1:199, 1:199] = np.maximum(FIDO_edit[1:199, 1:199], FIDO_edit[1+1:199+1,1:199]*P[1:199, 1:199,1] ) 
         FIDO_edit[1:199, 1:199] = np.maximum(FIDO_edit[1:199, 1:199], FIDO_edit[1:199,1-1:199-1]*P[1:199, 1:199,2] ) 
         FIDO_edit[1:199, 1:199] = np.maximum(FIDO_edit[1:199, 1:199], FIDO_edit[1:199,1+1:199+1]*P[1:199, 1:199,3] ) 
-        counter[n] = (np.array_equal(oldFIDO, FIDO_edit) == 0)
+        #counter[n] = (np.array_equal(oldFIDO, FIDO_edit) == 0)
         
     
     FIDO=FIDO_edit    
@@ -791,17 +775,17 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
     # Different filling in methods SLOW PART
     
     ###############################################################
-    #uniqueFIDOs = np.unique(FIDO)
-    #numFIDOs = uniqueFIDOs.shape  
-    #dummyFIDO = np.ones((sX,sY))
-    ## Number of pixels in this FIDO
-    #for i in np.arange(0,numFIDOs[0]):
-    #    Lookup=FIDO==uniqueFIDOs[i]
-    #    FIDOsize = np.sum(np.sum(dummyFIDO[Lookup]))
-    #    # Get average of color signals for this FIDO
-    #    S_wb[Lookup] = np.sum(WBColor[Lookup])/FIDOsize
-    #    S_rg[Lookup] = np.sum(RGColor[Lookup])/FIDOsize
-    #    S_by[Lookup] = np.sum(BYColor[Lookup])/FIDOsize
+    uniqueFIDOs = np.unique(FIDO)
+    numFIDOs = uniqueFIDOs.shape  
+    dummyFIDO = np.ones((sX,sY))
+    # Number of pixels in this FIDO
+    for i in np.arange(0,numFIDOs[0]):
+        Lookup=FIDO==uniqueFIDOs[i]
+        FIDOsize = np.sum(np.sum(dummyFIDO[Lookup]))
+        # Get average of color signals for this FIDO
+        S_wb[Lookup] = np.sum(WBColor[Lookup])/FIDOsize
+        S_rg[Lookup] = np.sum(RGColor[Lookup])/FIDOsize
+        S_by[Lookup] = np.sum(BYColor[Lookup])/FIDOsize
     ###############################################################
     #from skimage.segmentation import relabel_sequential
     #
@@ -835,11 +819,11 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
     #
     #mean_image = color_means[labels]
     ###############################################################  
-    FIDO = FIDO.astype(int)
-    labels = np.arange(FIDO.max()+1, dtype=int)
-    S_wb = labeled_mean(WBColor, FIDO, labels)[FIDO]
-    S_rg = labeled_mean(RGColor, FIDO, labels)[FIDO]
-    S_by = labeled_mean(BYColor, FIDO, labels)[FIDO]
+#    FIDO = FIDO.astype(int)
+#    labels = np.arange(FIDO.max()+1, dtype=int)
+#    S_wb = labeled_mean(WBColor, FIDO, labels)[FIDO]
+#    S_rg = labeled_mean(RGColor, FIDO, labels)[FIDO]
+#    S_by = labeled_mean(BYColor, FIDO, labels)[FIDO]
     ###############################################################
     #@jit
     #def numbaloops(Color):
