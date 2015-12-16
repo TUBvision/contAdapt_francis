@@ -4,19 +4,39 @@ Created on Fri Oct  9 10:26:40 2015
 Translated Python Version of Gregory Francis' contour adaptation
 """
 
-# From the commnand line, go to the directory with the images and type
-# convert -quality 100 -dither none -delay 10 -loop 0 All*.png Movie.gif
-
 import numpy as np
 import math
 import os
 import scipy
-import matplotlib.pyplot as plt
-from scipy import signal
 import image_edit # Side functions
+from scipy.ndimage.measurements import mean as labeled_mean
 
-# Code to make GIFs or make PNGS in file
-makeAnimatedGifs=0 # 0- make PNGs, 1- make GIFs
+"""
+Development version of "structCAN"
+
+
+Variables
+-----------
+condition - select stimulus condition
+
+Returns
+-----------
+output image
+
+Convert images to GIF
+------------
+From the commnand line, go to the directory with the images and type
+convert -quality 100 -dither none -delay 10 -loop 0 All*.png Movie.gif
+
+References
+-----------
+[1] Francis, G., & Kim. J. (2012). Simulations of induced visual scene fading with boundary offset and filling-in.
+    Vision Research, 62, 181–191.
+[2] http://stackoverflow.com/questions/33612568/speeding-up-for-loop-in-image-analysis-when-iterations-are-up-to-40-000
+    
+"""
+
+condition = 0
 
 # Parameters
 gray = 127
@@ -33,6 +53,13 @@ Bshift2 = np.array([[-1,  0],[ 0,  0],[  0, -1],[  0, 0]])
 i_x=200
 i_y=200
 
+# Parameters for Orientation Gated Dipoles
+Agate = 20.0  
+Bgate = 1.0
+Cgate = 1.0
+Rhogate = 0.007  
+inI = 5 
+
 ################  Define LGN kernels and other paramters  #####################
 
 # excitatory condition
@@ -46,12 +73,8 @@ E_ = .5  # coefficient
 beta = 2 # radius of spreads
 E = image_edit.Gaussian2D([0,0], E_, beta, Gconst)
 
-# Parameters for Orientation Gated Dipoles
-Agate = 20.0  
-Bgate = 1.0
-Cgate = 1.0
-Rhogate = 0.007  
-inI = 5 
+
+######################### Orientation filters ODOG ###########################
 
 # number of polarities (4 means horizontal and vertical orientations)
 K = 4  
@@ -64,7 +87,6 @@ gamma = 1.75
 G = image_edit.Gaussian2D([0+orientationShift,0+orientationShift], 1, gamma, 2)
 F = np.zeros((G.shape[0],G.shape[1],4))
 
-# Orientation filters (Difference of Offset Gaussians)
 for k in np.arange(0,K):
     m = np.sin((2*np.pi*(k+1))/K)
     n = np.cos((2*np.pi*(k+1))/K)
@@ -89,18 +111,14 @@ for k in np.arange(0,K):
     F[:,:,k] = F[:,:,k]/np.sqrt(normalizer)
 
 
-
-
-################################## CREATE INPUT STIMULUS ####################################### 
+########################## CREATE INPUT STIMULUS ##############################
 
 # Names of various stimulus conditions
 Conditions = ['Crosses', 'Blob', 'SizeMatch', 'Bipartite', 'Pyramids',
               'Annuli', 'Incomplete', 'Robinson-deSa2013', 
               'Robinson-deSa2012-E1', 'Robinson-deSa2012-E2', 'Prediction']
 
-#for condition in np.arange(1,12):
-# Only consider single condition for speed
-condition = 0
+
 print "Simulation condition : ", Conditions[condition]
 
 # Create directory for results
@@ -561,19 +579,20 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
     [rg, by, wb] = image_edit.ConvertRGBtoOpponentColor(inputImage, gray)
     
         
-    ######################################### LGN CELLS ################################################
-    # white black center-surround processing (but with current parameters it actually does very little)
+    ########################### LGN CELLS ###################################
+    # white black center-surround processing 
+    # (but with current parameters it actually does very little)
     
     # padding
     PaddingSize = math.floor(np.max(wb.shape)/2) 
     PaddingColor = wb[0,0]
     wb2 = image_edit.im_padding(wb, PaddingSize, PaddingColor)
     
-    # convolution
+    # convolution - mirrors of each other
     OnOff_Excite =   image_edit.conv2(wb2,C)
     OnOff_Inhibit =  image_edit.conv2(wb2,E)
-    OffOn_Excite =   image_edit.conv2(wb2,E)
-    OffOn_Inhibit =  image_edit.conv2(wb2,C)
+    OffOn_Excite =   OnOff_Inhibit
+    OffOn_Inhibit =  OnOff_Excite 
     
     # shunting parameters
     paramA = 50 # 1 
@@ -603,36 +622,19 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
     ################################ SIMPLE CELL ############################## 
     # Orientations are only based on inputs from the white-black color channel
     
-    y_pos_1 = np.abs(image_edit.conv2(LGNwb, F[:,:,0])) # loses imaginary components?
-    y_pos_2 = np.abs(image_edit.conv2(LGNwb, F[:,:,1]))
-    y_pos_3 = np.abs(image_edit.conv2(LGNwb, F[:,:,2]))
-    y_pos_4 = np.abs(image_edit.conv2(LGNwb, F[:,:,3]))  
-        
-    y_crop_1 = image_edit.im_cropping(y_pos_1, PaddingSize)
-    y_crop_2 = image_edit.im_cropping(y_pos_2, PaddingSize) 
-    y_crop_3 = image_edit.im_cropping(y_pos_3, PaddingSize) 
-    y_crop_4 = image_edit.im_cropping(y_pos_4, PaddingSize) 
-    
-    y_crop_1[y_crop_1<0] = 0
-    y_crop_2[y_crop_2<0] = 0
-    y_crop_3[y_crop_3<0] = 0 
-    y_crop_4[y_crop_4<0] = 0
-    
-    y_crop=np.zeros((y_crop_1.shape[0],y_crop_1.shape[1],K))
-    
-    y_crop[:,:,0] = y_crop_1
-    y_crop[:,:,1] = y_crop_2
-    y_crop[:,:,2] = y_crop_3
-    y_crop[:,:,3] = y_crop_4
-    
-    y = y_crop
+    y=np.zeros((i_x,i_y,K))
+    for i in range(4):
+        Ini = np.abs(image_edit.conv2(LGNwb, F[:,:,i])) # convolve
+        Ini = image_edit.im_cropping(Ini, PaddingSize)  # padding
+        Ini[Ini<0] = 0                                  # half wave rectify
+        y[:,:,i]=Ini
     
     ############################# COMPLEX CELL ################################ 
     
     # pool across contrast polarity
     planeSize = y.shape
-    z1= np.zeros((planeSize[0], planeSize[1], nOrient))
     
+    z1= np.zeros((planeSize[0], planeSize[1], nOrient))
     for k in np.arange(0,K/2):
         z1[:,:,k] = y[:,:,k] + y[:,:,k+K/2]
     
@@ -640,16 +642,14 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
     boundaryUpperLimit=25;
     z1[z1>boundaryUpperLimit] = boundaryUpperLimit
     
-    w1= np.zeros((planeSize[0], planeSize[1], nOrient))
-    
     # Add tonic input, inI, to boundaries
+    w1= np.zeros((planeSize[0], planeSize[1], nOrient))
     for k in np.arange(0,nOrient):
         w1[:,:,k] = inI  + z1[:,:,k]
     
     
     ############ ORIENTATION SPECIFIC HABITUATING TRANSMITTER GATES ################
     
-    #gate = np.zeros(w1.shape)
     # initialize gate on first time step
     if t==startTime :
         gate = Agate/(Bgate + Cgate*inI) * np.ones(w1.shape)
@@ -659,40 +659,34 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
     
     # solve gate for current time
     gate = gate_equil + (gate - gate_equil)* np.exp(-Rhogate*(Bgate+Cgate*w1)*timeStep)
-    
-    
+       
     
     ################# CROSS ORIENTATION DIPOLE COMPETITION ##########################
     
     gdAcrossWeight = 0.5 # strength of inhibition between orthogonal orientations
     
-    # for k in np.arange(0,nOrient):
     orthgonalK1 = 1 
     orthgonalK2 = 0
     
     v_1 = gate[:,:,0]*w1[:,:,0] - gdAcrossWeight*gate[:,:,orthgonalK1]*w1[:,:,orthgonalK1] 
     v_2 = gate[:,:,1]*w1[:,:,1] - gdAcrossWeight*gate[:,:,orthgonalK2]*w1[:,:,orthgonalK2] 
-    """ Error involved here in v_2 unknown origin"""
     
     v_1[v_1<0] = 0  # half-wave rectify
     v_2[v_2<0] = 0  # half-wave rectify
     
     O1=np.zeros((v_1.shape[1],v_1.shape[0],nOrient))
-    
     O1[:,:,0] = v_1
     O1[:,:,1] = v_2
     
     # soft threshold for boundaries
     bThresh=9.5
     O2=O1-bThresh
-    O2[O2<0] = 0 # These values feed into the filling-in stage
-    
+    O2[O2<0] = 0    
     
     ########################## FILLING-IN DOmains [FIDOs] ######################################
-    # FIDO  regions of connected boundary points    
+    # regions of connected boundary points, identifying distinct Filling-In DOmains (FIDOs),
+    # and then average within them
     
-    
-    # Most of this code is an algorithmic way of identifying distinct Filling-In DOmains (FIDOs)
     BndSig = np.sum(O2[:,:,:],2) 
     thint = O2.shape
     BndThr = 0.0
@@ -708,7 +702,6 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
     
     stimarea_x = np.arange(1,np.size(BndSig, 0)-1) 
     stimarea_y = np.arange(1,np.size(BndSig, 1)-1)
-    
     
     # Setting up boundary structures
     P=np.zeros((sX,sY,4))
@@ -772,133 +765,28 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
     S_rg = np.zeros((sX, sY))
     S_by = np.zeros((sX, sY)) 
     
-    # Different filling in methods SLOW PART
+    # Different filling in methods: ref [2] for other options:
     
-    ###############################################################
-    uniqueFIDOs = np.unique(FIDO)
-    numFIDOs = uniqueFIDOs.shape  
-    dummyFIDO = np.ones((sX,sY))
-    # Number of pixels in this FIDO
-    for i in np.arange(0,numFIDOs[0]):
-        Lookup=FIDO==uniqueFIDOs[i]
-        FIDOsize = np.sum(np.sum(dummyFIDO[Lookup]))
-        # Get average of color signals for this FIDO
-        S_wb[Lookup] = np.sum(WBColor[Lookup])/FIDOsize
-        S_rg[Lookup] = np.sum(RGColor[Lookup])/FIDOsize
-        S_by[Lookup] = np.sum(BYColor[Lookup])/FIDOsize
-    ###############################################################
-    #from skimage.segmentation import relabel_sequential
-    #
-    #WBColor = WBColor.reshape(-1, 3)
-    #labels = relabel_sequential(FIDO)[0]
-    #labels -= labels.min()
-    #
-    #def fmeans(double[:, ::1] data, long[::1] labels, long nsp):
-    #    cdef long n,  N = labels.shape[0]
-    #    cdef int K = data.shape[1]
-    #    cdef double[:, ::1] F = np.zeros((nsp, K), np.float64)
-    #    cdef int[::1] sizes = np.zeros(nsp, np.int32)
-    #    cdef long l, b
-    #    cdef double t
-    #
-    #    for n in range(N):
-    #        l = labels[n]
-    #        sizes[l] += 1
-    #
-    #        for z in range(K):
-    #            t = data[n, z]
-    #            F[l, z] += t
-    #
-    #    for n in range(nsp):
-    #        for z in range(K):
-    #            F[n, z] /= sizes[n]
-    #
-    #return np.asarray(F)
-    #
-    #color_means = fmeans(WBColor, labels.flatten(), labels.max()+1)
-    #
-    #mean_image = color_means[labels]
-    ###############################################################  
-#    FIDO = FIDO.astype(int)
-#    labels = np.arange(FIDO.max()+1, dtype=int)
-#    S_wb = labeled_mean(WBColor, FIDO, labels)[FIDO]
-#    S_rg = labeled_mean(RGColor, FIDO, labels)[FIDO]
-#    S_by = labeled_mean(BYColor, FIDO, labels)[FIDO]
-    ###############################################################
-    #@jit
-    #def numbaloops(Color):
-    #    counts=np.zeros(sX*sY)
-    #    sums=np.zeros(sX*sY)
-    #    S = np.empty((sX, sY))
-    #    for x in range(sX):
-    #        for y in range(sY):
-    #            region=FIDO[x,y]
-    #            value=Color[x,y]
-    #            counts[region]+=1
-    #            sums[region]+=value
-    #    for x in range(sX):
-    #        for y in range(sY):
-    #            region=FIDO[x,y]
-    #            S[x,y]=sums[region]/counts[region]
-    #    return S 
-    #
-    #S_wb=numbaloops(WBColor)
-    #S_rg=numbaloops(RGColor)
-    #S_by=numbaloops(BYColor)
-    ###############################################################
-    #uniqueFIDOs, unique_counts = np.unique(FIDO, return_counts=True) 
-    #numFIDOs = uniqueFIDOs.shape  
-    #for i in np.arange(0,numFIDOs[0]):
-    #    Lookup = FIDO==uniqueFIDOs[i]
-    #    # Get average of color signals for this FIDO
-    #    S_wb[Lookup] = np.sum(WBColor[Lookup])/unique_counts[i]
-    #    S_rg[Lookup] = np.sum(RGColor[Lookup])/unique_counts[i]
-    #    S_by[Lookup] = np.sum(BYColor[Lookup])/unique_counts[i]
-    ###############################################################
-    # Collections  method of Computing average color for unique FIDOs
-    #import collections
-    #
-    #colors = {'wb': WBColor, 'rg': RGColor, 'by': BYColor}
-    #planes = colors.keys()
-    #S = {plane: np.zeros((sX, sY)) for plane in planes}
-    #
-    #for plane in planes:
-    #    counts = collections.defaultdict(int)
-    #    sums = collections.defaultdict(int)
-    #    for (i, j), f in np.ndenumerate(FIDO):
-    #        counts[f] += 1
-    #        sums[f] += colors[plane][i, j]
-    #    for (i, j), f in np.ndenumerate(FIDO):
-    #        S[plane][i, j] = sums[f]/counts[f]
-    #S_rg=S['rg']
-    #S_wb=S['wb']
-    #S_by=S['by']
-    ###############################################################
-    # Pandas method - computing average color for unique FIDOs
-    #def newloop():
-    #    index=pd.Index(FIDO.flatten(),name='region')
-    #    means= pd.DataFrame(RGColor.flatten(),index).groupby(level=0).mean()
-    #    lookup=np.zeros(sX*sY)
-    #    lookup[means.index]=means.values
-    #    return lookup[FIDO]
-    #    
-    #def newloop1():
-    #    index=pd.Index(FIDO.flatten(),name='region')
-    #    means= pd.DataFrame(WBColor.flatten(),index).groupby(level=0).mean()
-    #    lookup=np.zeros(sX*sY)
-    #    lookup[means.index]=means.values
-    #    return lookup[FIDO]
-    #
-    #def newloop2():
-    #    index=pd.Index(FIDO.flatten(),name='region')
-    #    means= pd.DataFrame(BYColor.flatten(),index).groupby(level=0).mean()
-    #    lookup=np.zeros(sX*sY)
-    #    lookup[means.index]=means.values
-    #    return lookup[FIDO]
-    #
-    #S_rg=newloop()
-    #S_wb=newloop1()
-    #S_by=newloop2()
+    #1
+    #    uniqueFIDOs = np.unique(FIDO)
+    #    numFIDOs = uniqueFIDOs.shape  
+    #    dummyFIDO = np.ones((sX,sY))
+    #    # Number of pixels in this FIDO
+    #    for i in np.arange(0,numFIDOs[0]):
+    #        Lookup=FIDO==uniqueFIDOs[i]
+    #        FIDOsize = np.sum(np.sum(dummyFIDO[Lookup]))
+    #        # Get average of color signals for this FIDO
+    #        S_wb[Lookup] = np.sum(WBColor[Lookup])/FIDOsize
+    #        S_rg[Lookup] = np.sum(RGColor[Lookup])/FIDOsize
+    #        S_by[Lookup] = np.sum(BYColor[Lookup])/FIDOsize
+
+    #2
+    FIDO = FIDO.astype(int)
+    labels = np.arange(FIDO.max()+1, dtype=int)
+    S_wb = labeled_mean(WBColor, FIDO, labels)[FIDO]
+    S_rg = labeled_mean(RGColor, FIDO, labels)[FIDO]
+    S_by = labeled_mean(BYColor, FIDO, labels)[FIDO]
+
     ################### Save image files of network behavior ######################
     
     # Make boundary animated gif
@@ -925,19 +813,7 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
                 orientedImage[i, j, 1] = 1-ratio # reduce green
                 orientedImage[i, j, 0] = 1-ratio # reduce red
       
-    ###########################################################################
-    """
-    if makeAnimatedGifs==1:
-        [imind,cm] = rgb2ind(orientedImage,256)
-    
-        filename = sprintf('%s/Boundaries.gif', resultsDirectory);
-    
-        if timeCount==1:
-            imwrite(imind,cm,filename,'gif','DelayTime',timeStep,'loopcount',inf);
-        else:
-            imwrite(imind, cm,filename,'gif','DelayTime',timeStep,'writemode','append');
-      
-    """
+
     # Convert values in the color FIDOs to something that can be presented in an image
     S_rgmax = np.max(np.max(np.abs(S_rg[:,:])))
     S_bymax = np.max(np.max(np.abs(S_by[:,:])))
@@ -949,15 +825,7 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
     S_rgb = image_edit.ConvertOpponentColortoRGB(S_rg[:,:], S_by[:,:], S_wb[:,:], gray, S_max)
     # scale to 0 to 255 RGB values
     temp = 255.0* (S_rgb[:,:,0]/np.max(np.max(np.max(S_rgb))))
-    """
-    if makeAnimatedGifs==1:
-        filename = "{0}/{1}".format("/Filledin.gif", resultsDirectory)
-    
-        if timeCount==1:
-            imwrite(temp,filename,'gif','DelayTime',timeStep,'loopcount',inf)
-        else:
-            imwrite(temp,filename,'gif','DelayTime',timeStep,'writemode','append')
-    """
+
     # Make image of input, boundaries, and filled-in values to save as a png file
     thing = np.ones((i_x, 3*i_y, 3))
     

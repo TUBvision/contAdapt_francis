@@ -8,6 +8,32 @@ Translated Python Version of Gregory Francis' contour adaptation
 # From the command line, go to the directory with the images and type
 # convert -quality 100 -dither none -delay 10 -loop 0 All*.png Movie.gif
 
+
+
+
+### Development Notes ###
+"""
+- Array dimension mismatch error - self not properly accessed in each function
+e.g. "LGNcells" cannot currently read wb creation in "createStimulus" function
+
+"""
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 """
 Translation of Francis (2015)
 -> Extension of Francis and Kim model (2012), where full model description is located.
@@ -40,6 +66,7 @@ import os
 import scipy
 #import matplotlib.pyplot as plt
 from scipy.ndimage.filters import convolve
+from scipy.ndimage.measurements import mean as labeled_mean
 
 class CANNEM(object):
 
@@ -115,17 +142,14 @@ class CANNEM(object):
                      self.timeStep=timeStep
                      self.stopTime=stopTime
                      self.testOnset=testOnset
-                     self.wb = np.zeros((i_x*2,i_y*2))
-                     self.by = np.zeros((i_x*2,i_y*2))
-                     self.rg = np.zeros((i_x*2,i_y*2))
                      self.gate = np.zeros((i_x,i_y,K/2))
                      self.inputImage = np.zeros((i_x, i_y, 3))
+                     # Initiate time sequence 
+                     self.timeCount=0
                      
     def evaluate(self,condition):
         c=CANNEM()
         c.LGNkernels(2*np.log(2), 10, .5, .5, 2, 1.75, 0.5)
-        # Initiate time sequence 
-        self.timeCount=0
         for time in np.arange(self.startTime, self.stopTime+self.timeStep, self.timeStep):
             self.timeCount= self.timeCount+1
             c.createStimulus(time,5,condition)
@@ -256,15 +280,6 @@ class CANNEM(object):
             self.startTime = self.timeStep
             self.testOnset = self.stopTime-2.0 # seconds
             self.testColorChange = 8  # 8 is good for demonstration of same size and larger size adaptor  
-        
-            ###########################    To be Externalised     #############     
-        
-        
-        
-            
-            
-            
-            ###################################################################   
         
             # change adaptor color with each time step to produce flicker
             self.adaptorColorChange = -self.gray # black
@@ -672,7 +687,12 @@ class CANNEM(object):
             self.inputImage[:,:,0] = self.startInputImage
             self.inputImage[:,:,1] = self.startInputImage
             self.inputImage[:,:,2] = self.startInputImage
+            print self.inputImage.shape
             [rg, by, wb] = ConvertRGBtoOpponentColor(self.inputImage, self.gray)
+            
+            self.wb = np.zeros((self.i_x,self.i_y))
+            self.by = np.zeros((self.i_x,self.i_y))
+            self.rg = np.zeros((self.i_x,self.i_y))
             self.wb=wb
             self.rg=rg
             self.by=by
@@ -704,13 +724,11 @@ class CANNEM(object):
                 Size of padding required for this image. [typ. 100]
         
         """
-        
         # padding
         self.PaddingSize = math.floor(np.max(self.wb.shape)/2) 
         PaddingColor = self.wb[0,0]
         self.wb2 = im_padding(self.wb, self.PaddingSize, PaddingColor)
-        
-        # convolution
+        # convolution - reflection of each other
         OnOff_Excite =  conv2(self.wb2, self.C, mode='same') 
         OnOff_Inhibit = conv2(self.wb2, self.E, mode='same')
         OffOn_Excite = OnOff_Inhibit
@@ -735,11 +753,11 @@ class CANNEM(object):
         
         # pad planes for all color channels for later use
         PaddingColor = self.wb[0,0]
-        self.wb = im_padding(self.wb, 100, PaddingColor)
+        self.wb = im_padding(self.wb, self.PaddingSize, PaddingColor)
         PaddingColor = self.rg[0,0]
-        self.rg = im_padding(self.rg, 100, PaddingColor)
+        self.rg = im_padding(self.rg, self.PaddingSize, PaddingColor)
         PaddingColor = self.by[0,0]
-        self.by = im_padding(self.by, 100, PaddingColor)
+        self.by = im_padding(self.by, self.PaddingSize, PaddingColor)
         
     
     def simpleCell(self) :
@@ -768,33 +786,17 @@ class CANNEM(object):
                 simple cell process output image [200x200x4]
         
         """
-        # convolution        
-        y_pos_1 = conv2(self.LGNwb, self.F[:,:,0], mode='same') 
-        y_pos_2 = conv2(self.LGNwb, self.F[:,:,1], mode='same')
-        y_pos_3=  conv2(self.LGNwb, self.F[:,:,2], mode='same')
-        y_pos_4 = conv2(self.LGNwb, self.F[:,:,3], mode='same')    
-        
-        # cropping
-        y_crop_1 = im_cropping(y_pos_1, 100)
-        y_crop_2 = im_cropping(y_pos_2, 100) 
-        y_crop_3 = im_cropping(y_pos_3, 100) 
-        y_crop_4 = im_cropping(y_pos_4, 100) 
-        
-        # positive only
-        y_crop_1[y_crop_1<0] = 0
-        y_crop_2[y_crop_2<0] = 0
-        y_crop_3[y_crop_3<0] = 0 
-        y_crop_4[y_crop_4<0] = 0
-        
-        # storage
-        y_crop=np.zeros((y_crop_1.shape[0],y_crop_1.shape[1],self.K))
-        y_crop[:,:,0] = y_crop_1
-        y_crop[:,:,1] = y_crop_2
-        y_crop[:,:,2] = y_crop_3
-        y_crop[:,:,3] = y_crop_4
-        
-        self.y = y_crop
+        y = np.zeros((self.i_x,self.i_y,self.K))
+        print y.shape
+        for i in range(self.K):
+            Ini = np.abs(conv2(self.LGNwb, self.F[:,:,i]))   # convolve
+            Ini = im_cropping(Ini, self.PaddingSize)         # padding
+            Ini[Ini<0] = 0                                   # half wave rectify
+            y[:,:,i]=Ini
+            
+        self.y = y
     
+        
     def complexCell(self, boundaryUpperLimit):
         """
         Usage: 
@@ -833,7 +835,7 @@ class CANNEM(object):
         self.w1= np.zeros((self.y.shape[0], self.y.shape[1], self.nOrient))
         for k in np.arange(0,self.nOrient):
             self.w1[:,:,k] = self.inI  + z1[:,:,k]
-    
+        
     
     def gateComp(self,time, Agate,Bgate,Cgate,Rhogate):
         """
@@ -871,7 +873,7 @@ class CANNEM(object):
         
         # solve gate for current time
         self.gate = gate_equil + (self.gate - gate_equil)* np.exp(-Rhogate*(Bgate+Cgate*self.w1)*self.timeStep)
-    
+        
             
     def dipoleComp(self):
         """
@@ -920,7 +922,8 @@ class CANNEM(object):
         # soft threshold for boundaries
         bThresh=9.5
         self.O2=O1-bThresh
-        self.O2[self.O2<0] = 0     
+        self.O2[self.O2<0] = 0   
+        
     
     def fillingFIDO(self):
         """
@@ -1027,38 +1030,28 @@ class CANNEM(object):
         FIDO=FIDO_edit    
         
         # input is color signals
-        wbColor = im_cropping(self.wb, 100)
-        rgColor = im_cropping(self.rg, 100)
-        byColor = im_cropping(self.by, 100)
-        
-        # Remove unused variables for memory
-        self.wb=None
-        self.by=None
-        self.rg=None
+        wbColor = im_cropping(self.wb, self.PaddingSize)
+        rgColor = im_cropping(self.rg, self.PaddingSize)
+        byColor = im_cropping(self.by, self.PaddingSize)
         
         # Filling-in values for white-black, red-green, and blue-self.yellow
         self.S_wb = np.zeros((sX, sY))
         self.S_rg = np.zeros((sX, sY))
         self.S_by = np.zeros((sX, sY)) 
         
+        
         # Compute average color for unique FIDOs
-        uniqueFIDOs = np.unique(FIDO)
-        numFIDOs = uniqueFIDOs.shape  
-        dummyFIDO = np.ones((sX,sY))
-        # Number of pixels in this FIDO
-        for i in np.arange(0,numFIDOs[0]):
-            Lookup=FIDO==uniqueFIDOs[i]
-            FIDOsize = np.sum(np.sum(dummyFIDO[Lookup]))
-            # Get average of color signals for this FIDO
-            self.S_wb[Lookup] = np.sum(wbColor[Lookup])/FIDOsize
-            self.S_rg[Lookup] = np.sum(rgColor[Lookup])/FIDOsize
-            self.S_by[Lookup] = np.sum(byColor[Lookup])/FIDOsize
+        FIDO = FIDO.astype(int)
+        labels = np.arange(FIDO.max()+1, dtype=int)
+        self.S_wb = labeled_mean(wbColor, FIDO, labels)[FIDO]
+        self.S_rg = labeled_mean(rgColor, FIDO, labels)[FIDO]
+        self.S_by = labeled_mean(byColor, FIDO, labels)[FIDO]
         
 
     def saveImages(self,condition):
         """
         Usage:
-        >>> saveImages(self)    
+        >>> saveImages(self,condition)    
         
         Save image files of network behaviour
         
