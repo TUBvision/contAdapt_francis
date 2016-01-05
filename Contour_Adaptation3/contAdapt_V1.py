@@ -14,6 +14,17 @@ from scipy.ndimage.measurements import mean as labeled_mean
 """
 Development version of "structCAN"
 
+To use, choose condition variable [0-10], run code and wait approx. 5 minutes
+Then go to "Convert images to GIF explanation of code.
+
+To plot variables found in the Variable explorer use the below example code 
+in a seperate python file
+
+import matplotlib.pyplot as plt
+fig, (ax1,ax2) = plt.subplots(ncols=2, figsize=(10,10))
+ax1.imshow(FIDO_edit[:,:,0])
+ax2.imshow(FIDO_edit[:,:,1])
+
 
 Variables
 -----------
@@ -562,15 +573,6 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
     startinputImage[i_x/2-2,i_y/2]=0
     startinputImage[i_x/2,i_y/2-2]=0
     
-    """
-    if makeAnimatedGifs==1:
-        filename = "{0}/{1}".format(resultsDirectory,'Stimulus.gif')
-        if timeCount==1:
-            cv2.imwrite(startinputImage,filename,'gif','DelayTime',timeStep,'loopcount',inf)
-        else:
-            cv2.imwrite(startinputImage,filename,'gif','DelayTime',timeStep,'writemode','append')
-    """
-    
     # Convert RGB input image to red-green, blue-yellow, white-black coordinates
     inputImage = np.zeros((i_x, i_y, 3))
     inputImage[:,:,0] = startinputImage
@@ -591,9 +593,7 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
     # convolution - mirrors of each other
     OnOff_Excite =   image_edit.conv2(wb2,C)
     OnOff_Inhibit =  image_edit.conv2(wb2,E)
-    OffOn_Excite =   OnOff_Inhibit
-    OffOn_Inhibit =  OnOff_Excite 
-    
+
     # shunting parameters
     paramA = 50 # 1 
     paramB = 90 # 90
@@ -601,7 +601,7 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
     
     # shunting
     x_OnOff = (paramB*OnOff_Excite-paramD*OnOff_Inhibit)/(paramA+(OnOff_Excite+OnOff_Inhibit))
-    x_OffOn = (paramB*OffOn_Excite-paramD*OffOn_Inhibit)/(paramA+(OffOn_Excite+OffOn_Inhibit))
+    x_OffOn = (paramB*OnOff_Inhibit-paramD*OnOff_Excite)/(paramA+(OnOff_Inhibit+OnOff_Excite))
     
     # cutting negative values
     x_pos = x_OnOff - x_OffOn
@@ -623,7 +623,7 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
     # Orientations are only based on inputs from the white-black color channel
     
     y=np.zeros((i_x,i_y,K))
-    for i in range(4):
+    for i in range(K):
         Ini = np.abs(image_edit.conv2(LGNwb, F[:,:,i])) # convolve
         Ini = image_edit.im_cropping(Ini, PaddingSize)  # padding
         Ini[Ini<0] = 0                                  # half wave rectify
@@ -668,8 +668,8 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
     orthgonalK1 = 1 
     orthgonalK2 = 0
     
-    v_1 = gate[:,:,0]*w1[:,:,0] - gdAcrossWeight*gate[:,:,orthgonalK1]*w1[:,:,orthgonalK1] 
-    v_2 = gate[:,:,1]*w1[:,:,1] - gdAcrossWeight*gate[:,:,orthgonalK2]*w1[:,:,orthgonalK2] 
+    v_1 = gate[:,:,0]*w1[:,:,0] - gdAcrossWeight*gate[:,:,1]*w1[:,:,1] 
+    v_2 = gate[:,:,1]*w1[:,:,1] - gdAcrossWeight*gate[:,:,0]*w1[:,:,0] 
     
     v_1[v_1<0] = 0  # half-wave rectify
     v_2[v_2<0] = 0  # half-wave rectify
