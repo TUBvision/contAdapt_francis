@@ -10,6 +10,7 @@ import os
 import scipy
 import image_edit # Side functions
 from scipy.ndimage.measurements import mean as labeled_mean
+#import whitesillusion as wi
 
 """
 Development version of "structCAN"
@@ -69,7 +70,7 @@ Agate = 20.0
 Bgate = 1.0
 Cgate = 1.0
 Rhogate = 0.007  
-inI = 5 
+inI = 5 # tonic input
 
 ################  Define LGN kernels and other paramters  #####################
 
@@ -127,7 +128,7 @@ for k in np.arange(0,K):
 # Names of various stimulus conditions
 Conditions = ['Crosses', 'Blob', 'SizeMatch', 'Bipartite', 'Pyramids',
               'Annuli', 'Incomplete', 'Robinson-deSa2013', 
-              'Robinson-deSa2012-E1', 'Robinson-deSa2012-E2', 'Prediction']
+              'Robinson-deSa2012-E1', 'Robinson-deSa2012-E2', 'Prediction','Whites-Illusion']
 
 
 print "Simulation condition : ", Conditions[condition]
@@ -142,9 +143,9 @@ if os.path.exists(resultsDirectory)==0:
 timeStep = 0.1 # Originally 0.1 seconds (Changed for speed)
 stopTime = 6 # seconds 6 for A&G conditions - makes for 4 second adaptation
 startTime = timeStep
-testOnset = stopTime-2.0 
-# 5 is typical for A&G conditions (this is the change, increase or decrease,
-# from the gray background)
+testOnset = stopTime-2.0
+
+# 5 is typical for A&G conditions (this is the change, increase or decrease,from the gray background)
 testColorChange=5 
 
 if condition==7:  # special settings for R&dS 2013 condition
@@ -563,6 +564,19 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
             centerPosition = [i_x/2, i_y/2 + testSize]
             startinputImage[centerPosition[0]-testSize/2+1:centerPosition[0]+testSize/2 -1, centerPosition[1]-testSize/2+1:centerPosition[1]+testSize/2-1]=gray+testColorChange 
     
+    if condition ==11: #Whites illusion
+        startinputImage = np.ones((i_x, i_y))*gray
+        stim, mask_dark, mask_bright = wi.evaluate()
+        if time< testOnset: # Show adaptors (mask)
+            if adaptorColorChange == gray:
+                startinputImage= mask_bright
+            else:
+                startinputImage= mask_dark
+        else: # Show test stimuli
+            startinputImage = stim
+        
+    
+    
     # Remove start column and row, add to end, shift matching to Matlab indexing
     #store = np.vstack((startinputImage[1::,:],startinputImage[0,:]))
     #startinputImage = np.vstack((store[:,1::].T,store[:,0])).T
@@ -572,6 +586,9 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
     startinputImage[i_x/2,i_y/2]=255
     startinputImage[i_x/2-2,i_y/2]=0
     startinputImage[i_x/2,i_y/2-2]=0
+    
+    # Add noise
+    #startinputImage=mask1[1:200,1:200]*startinputImage    
     
     # Convert RGB input image to red-green, blue-yellow, white-black coordinates
     inputImage = np.zeros((i_x, i_y, 3))

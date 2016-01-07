@@ -147,19 +147,19 @@ class CANNEM(object):
                      # Initiate time sequence 
                      self.timeCount=0
                      
+                     
     def evaluate(self,condition):
-        c=CANNEM()
-        c.LGNkernels(2*np.log(2), 10, .5, .5, 2, 1.75, 0.5)
+        self.LGNkernels(2*np.log(2), 10, .5, .5, 2, 1.75, 0.5)
         for time in np.arange(self.startTime, self.stopTime+self.timeStep, self.timeStep):
             self.timeCount= self.timeCount+1
-            c.createStimulus(time,5,condition)
-            c.LGNCells()
-            c.simpleCell()
-            c.complexCell(25)
-            c.gateComp( time, 20.0, 1.0, 1.0, 0.007)
-            c.dipoleComp()
-            c.fillingFIDO()
-            c.saveImages(condition)
+            [rg, by, wb] = self.createStimulus(time,5,condition)
+            [rg, by, wb] = self.LGNCells(rg, by, wb)
+            self.simpleCell()
+            self.complexCell(25)
+            self.gateComp( time, 20.0, 1.0, 1.0, 0.007)
+            self.dipoleComp()
+            self.fillingFIDO(rg, by, wb)
+            self.saveImages(condition)
                          
     def LGNkernels(self,Gconst, C_,E_, alpha,beta,gamma,orientationShift):
         """
@@ -687,18 +687,10 @@ class CANNEM(object):
             self.inputImage[:,:,0] = self.startInputImage
             self.inputImage[:,:,1] = self.startInputImage
             self.inputImage[:,:,2] = self.startInputImage
-            print self.inputImage.shape
             [rg, by, wb] = ConvertRGBtoOpponentColor(self.inputImage, self.gray)
+            return rg, by, wb
             
-            self.wb = np.zeros((self.i_x,self.i_y))
-            self.by = np.zeros((self.i_x,self.i_y))
-            self.rg = np.zeros((self.i_x,self.i_y))
-            self.wb=wb
-            self.rg=rg
-            self.by=by
-            
-            
-    def LGNCells(self):
+    def LGNCells(self, rg, by, wb):
         """
         Usage:
         >>> LGNCells(self)
@@ -725,9 +717,9 @@ class CANNEM(object):
         
         """
         # padding
-        self.PaddingSize = math.floor(np.max(self.wb.shape)/2) 
-        PaddingColor = self.wb[0,0]
-        self.wb2 = im_padding(self.wb, self.PaddingSize, PaddingColor)
+        self.PaddingSize = math.floor(np.max(wb.shape)/2) 
+        PaddingColor = wb[0,0]
+        self.wb2 = im_padding(wb, self.PaddingSize, PaddingColor)
         # convolution - reflection of each other
         OnOff_Excite =  conv2(self.wb2, self.C, mode='same') 
         OnOff_Inhibit = conv2(self.wb2, self.E, mode='same')
@@ -752,12 +744,13 @@ class CANNEM(object):
         self.LGNwb = x_pos - x_neg
         
         # pad planes for all color channels for later use
-        PaddingColor = self.wb[0,0]
-        self.wb = im_padding(self.wb, self.PaddingSize, PaddingColor)
-        PaddingColor = self.rg[0,0]
-        self.rg = im_padding(self.rg, self.PaddingSize, PaddingColor)
-        PaddingColor = self.by[0,0]
-        self.by = im_padding(self.by, self.PaddingSize, PaddingColor)
+        PaddingColor = wb[0,0]
+        wb = im_padding(wb, self.PaddingSize, PaddingColor)
+        PaddingColor = rg[0,0]
+        rg = im_padding(rg, self.PaddingSize, PaddingColor)
+        PaddingColor = by[0,0]
+        by = im_padding(by, self.PaddingSize, PaddingColor)
+        return rg, by, wb
         
     
     def simpleCell(self) :
@@ -787,7 +780,7 @@ class CANNEM(object):
         
         """
         y = np.zeros((self.i_x,self.i_y,self.K))
-        print y.shape
+
         for i in range(self.K):
             Ini = np.abs(conv2(self.LGNwb, self.F[:,:,i]))   # convolve
             Ini = im_cropping(Ini, self.PaddingSize)         # padding
@@ -925,7 +918,7 @@ class CANNEM(object):
         self.O2[self.O2<0] = 0   
         
     
-    def fillingFIDO(self):
+    def fillingFIDO(self,rg, by, wb):
         """
         Usage: 
         >>> fillingFIDO(self)
@@ -1030,9 +1023,9 @@ class CANNEM(object):
         FIDO=FIDO_edit    
         
         # input is color signals
-        wbColor = im_cropping(self.wb, self.PaddingSize)
-        rgColor = im_cropping(self.rg, self.PaddingSize)
-        byColor = im_cropping(self.by, self.PaddingSize)
+        wbColor = im_cropping(wb, self.PaddingSize)
+        rgColor = im_cropping(rg, self.PaddingSize)
+        byColor = im_cropping(by, self.PaddingSize)
         
         # Filling-in values for white-black, red-green, and blue-self.yellow
         self.S_wb = np.zeros((sX, sY))
