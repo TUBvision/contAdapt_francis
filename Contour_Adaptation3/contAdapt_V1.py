@@ -10,8 +10,8 @@ import os
 import scipy
 import image_edit # Side functions
 from scipy.ndimage.measurements import mean as labeled_mean
-#import whitesillusion as wi
-
+import whitesillusion as wi
+import multiprocessing as mp
 """
 Development version of "structCAN"
 
@@ -48,7 +48,11 @@ References
     
 """
 
-condition = 0
+condition = 11
+direction = 'h' # direction of adapting bars in condition 11 - Whites Illusion
+
+# [ Frequency (cpd), Noisemask size, ppd]
+noise = [0,512,31] # Options: [0.11,0.19,0.33,0.58,1.00,1.73,3.00,5.20,9.00] (0 if none) 
 
 # Parameters
 gray = 127
@@ -566,7 +570,7 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
     
     if condition ==11: #Whites illusion
         startinputImage = np.ones((i_x, i_y))*gray
-        stim, mask_dark, mask_bright = wi.evaluate()
+        stim, mask_dark, mask_bright = wi.evaluate(direction) # 'h'orizontal, 'v'ertical or 'both' bars
         if time< testOnset: # Show adaptors (mask)
             if adaptorColorChange == gray:
                 startinputImage= mask_bright
@@ -588,7 +592,9 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
     startinputImage[i_x/2,i_y/2-2]=0
     
     # Add noise
-    #startinputImage=mask1[1:200,1:200]*startinputImage    
+    if noise[0] > 0:
+        mask1=np.load("{0}{1}{2}{3}{4}{5}{6}".format('/home/will/Documents/noisemasks/noise',noise[1],'_',noise[2],'ppd_',noise[0],'_5.npy'))
+        startinputImage=mask1[0:200,0:200]*startinputImage    
     
     # Convert RGB input image to red-green, blue-yellow, white-black coordinates
     inputImage = np.zeros((i_x, i_y, 3))
@@ -627,6 +633,7 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
     x_neg[x_neg<0] = 0
     LGNwb = x_pos - x_neg
     
+    pre_pad_wb=wb
     # pad planes for all color channels for later use
     PaddingColor = wb[0,0]
     wb = image_edit.im_padding(wb, PaddingSize, PaddingColor)
@@ -645,6 +652,24 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
         Ini = image_edit.im_cropping(Ini, PaddingSize)  # padding
         Ini[Ini<0] = 0                                  # half wave rectify
         y[:,:,i]=Ini
+        
+#    y=np.zeros((i_x,i_y,K))
+#    # define a example function
+#    def simple_cell(x):
+#        Ini = np.abs(image_edit.conv2(LGNwb, F[:,:,x])) # convolve
+#        Ini = image_edit.im_cropping(Ini, PaddingSize)  # padding
+#        Ini[Ini<0] = 0                                  # half wave rectify
+#        return Ini
+#    
+#    pool = mp.Pool(processes=4)
+#    results = [pool.apply_async(simple_cell, args=(x,)) for x in range(4)]
+#    output = [p.get() for p in results]
+#    
+#    y[:,:,0]=output[0]
+#    y[:,:,1]=output[1]
+#    y[:,:,2]=output[2]
+#    y[:,:,3]=output[3]
+
     
     ############################# COMPLEX CELL ################################ 
     

@@ -217,26 +217,31 @@ def contours_white_bmmc(shape, ppd, contrast, frequency, mean_lum=.5,
     mask_bright[idx_mask] = bright
     return (mask_dark, mask_bright)
     
-#def evaluate():
-gray=127
-stim = whites_illusion_bmcc((2,2),100,0.5,2)*255
-mask_dark_h,mask_bright_h = contours_white_bmmc((2,2),100,0.5,2,mean_lum=gray/2,contour_width=2,orientation='horizontal')
-mask_dark_v,mask_bright_v = contours_white_bmmc((2,2),100,0.5,2,mean_lum=gray/2,contour_width=2,orientation='vertical')
-
-mask_dark_both = mask_dark_h + mask_dark_v
-mask_bright_both = mask_bright_h + mask_bright_v
-
-#return stim, mask_dark_both, mask_bright_both
-import matplotlib.pyplot as plt
-fig, (ax1,ax2,ax3) = plt.subplots(ncols=3,figsize=(15,15))
-ax1.imshow(stim,vmin=np.min(mask_dark),vmax=np.max(mask_bright),cmap= 'gray')
-ax2.imshow(mask_dark,vmin=np.min(mask_dark),vmax=np.max(mask_bright),cmap= 'gray')
-im=ax3.imshow(mask_bright,vmin=np.min(mask_dark),vmax=np.max(mask_bright),cmap= 'gray')
+def evaluate(direction):
+    gray=127
+    stim = whites_illusion_bmcc((2,2),100,0.2,2)*255
+    if direction == 'h': # horizontal bars
+        mask_dark,mask_bright = contours_white_bmmc((2,2),100,1,2,mean_lum=gray/2,contour_width=2,orientation='horizontal')
+    elif direction == 'v': # vertical bars
+        mask_dark,mask_bright = contours_white_bmmc((2,2),100,1,2,mean_lum=gray/2,contour_width=2,orientation='vertical')
+    elif direction == 'both': # both directions
+        mask_dark_h,mask_bright_h = contours_white_bmmc((2,2),100,1,2,mean_lum=gray/2,contour_width=2,orientation='horizontal')
+        mask_dark_v,mask_bright_v = contours_white_bmmc((2,2),100,1,2,mean_lum=gray/2,contour_width=2,orientation='vertical')
+        mask_dark = mask_dark_h + mask_dark_v
+        mask_bright = mask_bright_h + mask_bright_v
+    
+    return stim, mask_dark, mask_bright
+    
+#import matplotlib.pyplot as plt
+#fig, (ax1,ax2,ax3) = plt.subplots(ncols=3,figsize=(15,15))
+#ax1.imshow(stim,vmin=np.min(mask_dark),vmax=np.max(mask_bright),cmap= 'gray')
+#ax2.imshow(mask_dark_h,vmin=np.min(mask_dark),vmax=np.max(mask_bright),cmap= 'gray')
+#im=ax3.imshow(mask_bright_h,vmin=np.min(mask_dark),vmax=np.max(mask_bright),cmap= 'gray')
 
 # Splint version of colorbar inclusion
-fig.subplots_adjust(right=0.8)
-cbar_ax = fig.add_axes([0.82, 0.412, 0.05, 0.2])
-fig.colorbar(im, cax=cbar_ax)
-
-fig, (ax1) = plt.subplots(ncols=1, figsize=(10,10))
-ax1.imshow(thing[:,:,0],vmin=np.min(mask_dark),vmax=np.max(mask_bright),cmap= 'gray')
+#fig.subplots_adjust(right=0.8)
+#cbar_ax = fig.add_axes([0.82, 0.412, 0.05, 0.2])
+#fig.colorbar(im, cax=cbar_ax)
+#
+#fig, (ax1) = plt.subplots(ncols=1, figsize=(10,10))
+#ax1.imshow(thing[:,:,0],vmin=np.min(mask_dark),vmax=np.max(mask_bright),cmap= 'gray')

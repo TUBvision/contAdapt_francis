@@ -67,7 +67,8 @@ import scipy
 #import matplotlib.pyplot as plt
 from scipy.ndimage.filters import convolve
 from scipy.ndimage.measurements import mean as labeled_mean
-
+import whitesillusion as wi
+    
 class CANNEM(object):
 
     """ 
@@ -125,7 +126,7 @@ class CANNEM(object):
                  K = 4 , 
                  Conditions = ['Crosses', 'Blob', 'SizeMatch', 'Bipartite', 'Pyramids',
                       'Annuli', 'Incomplete', 'Robinson-deSa2013', 
-                      'Robinson-deSa2012-E1', 'Robinson-deSa2012-E2', 'Prediction'],
+                      'Robinson-deSa2012-E1', 'Robinson-deSa2012-E2', 'Prediction','Whites-Illusion'],
                  timeStep = 0.1, # Set timing Parameters (seconds)
                  stopTime = 6, # seconds 6 for A&G conditions - makes for 4 second adaptation
                  testOnset = 6 - 2,
@@ -142,23 +143,22 @@ class CANNEM(object):
                      self.timeStep=timeStep
                      self.stopTime=stopTime
                      self.testOnset=testOnset
-                     self.gate = np.zeros((i_x,i_y,K/2))
-                     self.inputImage = np.zeros((i_x, i_y, 3))
                      # Initiate time sequence 
                      self.timeCount=0
                      
                      
     def evaluate(self,condition):
         self.LGNkernels(2*np.log(2), 10, .5, .5, 2, 1.75, 0.5)
+        print "Simulation condition : ", self.Conditions[condition]
         for time in np.arange(self.startTime, self.stopTime+self.timeStep, self.timeStep):
             self.timeCount= self.timeCount+1
-            [rg, by, wb] = self.createStimulus(time,5,condition)
-            [rg, by, wb] = self.LGNCells(rg, by, wb)
+            self.createStimulus(time,5,condition)
+            self.LGNCells()
             self.simpleCell()
             self.complexCell(25)
-            self.gateComp( time, 20.0, 1.0, 1.0, 0.007)
+            self.gateComp(time, 20.0, 1.0, 1.0, 0.007)
             self.dipoleComp()
-            self.fillingFIDO(rg, by, wb)
+            self.fillingFIDO()
             self.saveImages(condition)
                          
     def LGNkernels(self,Gconst, C_,E_, alpha,beta,gamma,orientationShift):
@@ -262,8 +262,7 @@ class CANNEM(object):
                 Final image shown to participant
 
         """        
-        print "Simulation condition : ", self.Conditions[condition]
-             
+                     
         # Special timing settings
         if condition==7:  # special settings for R&dS 2013 condition
             self.timeStep = 0.153 # seconds
@@ -271,7 +270,7 @@ class CANNEM(object):
             #stopTime = 2+timeStep # seconds - no adapt condition (actuallself.y one presentation) -- 0.153 seconds of adaptation
             self.startTime = self.timeStep
             self.testOnset = self.stopTime-2.0 # seconds
-            self.testColorChange = 8  # 8 is good for demonstration
+            testColorChange = 8  # 8 is good for demonstration
         
         if condition==8 or condition==9: # special settings for R&dS 2012 conditions
             self.timeStep = 0.16 # seconds
@@ -279,418 +278,430 @@ class CANNEM(object):
             #stopTime = 2+3*timeStep # seconds -no adapt condition (actuallself.y one flicker cself.ycle of adaptation)
             self.startTime = self.timeStep
             self.testOnset = self.stopTime-2.0 # seconds
-            self.testColorChange = 8  # 8 is good for demonstration of same size and larger size adaptor  
+            testColorChange = 8  # 8 is good for demonstration of same size and larger size adaptor  
         
-            # change adaptor color with each time step to produce flicker
-            self.adaptorColorChange = -self.gray # black
-            if np.mod(self.timeCount, 2)== 0:
-                self.adaptorColorChange=self.gray
+        # change adaptor color with each time step to produce flicker
+        self.adaptorColorChange = -self.gray # black
+        if np.mod(self.timeCount, 2)== 0:
+            self.adaptorColorChange=self.gray
                 
-               
-            if condition==0: # Crosses (Adapter size by divisible by 2 & 6)
-                self.adaptorSize=42
-                self.startInputImage = np.ones((self.i_x, self.i_y))*self.gray  
-                for i in np.arange(1,5): # for range 1-4 crosses
-                    self.centerPosition =[0,0]
-                    if i==1: # left
-                       self.centerPosition = [self.i_x/2, self.i_y/4]
-                    if i==2: # right
-                       self.centerPosition = [self.i_x/2, 3*self.i_y/4]
-                    if i==3: # top
-                       self.centerPosition = [1*self.i_x/4, self.i_y/2]
-                    if i==4: # bottom
-                       self.centerPosition = [3*self.i_x/4, self.i_y/2]   
-                    self.centerPosition[0] = np.round(self.centerPosition[0])
-                    self.centerPosition[1] = np.round(self.centerPosition[1])
-                    if time< self.testOnset: # draw adaptors   
-                        # draw crosses
-                        if i==3 or i==4:
-                            # vertical
-                            self.startInputImage[self.centerPosition[0]-self.adaptorSize/2-1:self.centerPosition[0]+self.adaptorSize/2:1, self.centerPosition[1]-self.adaptorSize/6-1:self.centerPosition[1]+self.adaptorSize/6:1]=self.gray+self.adaptorColorChange
-                            # horizontal
-                            self.startInputImage[self.centerPosition[0]-self.adaptorSize/6-1:self.centerPosition[0]+self.adaptorSize/6:1, self.centerPosition[1]-self.adaptorSize/2-1:self.centerPosition[1]+self.adaptorSize/2:1]=self.gray+self.adaptorColorChange
-                            # make outline, by cutting middle
-                            self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2 -1:1, self.centerPosition[1]-self.adaptorSize/6:self.centerPosition[1]+self.adaptorSize/6-1:1]=self.gray
-                            self.startInputImage[self.centerPosition[0]-self.adaptorSize/6:self.centerPosition[0]+self.adaptorSize/6 -1:1, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2-1:1]=self.gray
-                    else: # draw test stimuli
-                        testColor = self.gray+self.testColorChange
-                        if i==1 or i==3:
-                            testColor=self.gray-self.testColorChange
+           
+        if condition==0: # Crosses (Adapter size by divisible by 2 & 6)
+            self.adaptorSize=42
+            self.startInputImage = np.ones((self.i_x, self.i_y))*self.gray  
+            for i in np.arange(1,5): # for range 1-4 crosses
+                self.centerPosition =[0,0]
+                if i==1: # left
+                   self.centerPosition = [self.i_x/2, self.i_y/4]
+                if i==2: # right
+                   self.centerPosition = [self.i_x/2, 3*self.i_y/4]
+                if i==3: # top
+                   self.centerPosition = [1*self.i_x/4, self.i_y/2]
+                if i==4: # bottom
+                   self.centerPosition = [3*self.i_x/4, self.i_y/2]   
+                self.centerPosition[0] = np.round(self.centerPosition[0])
+                self.centerPosition[1] = np.round(self.centerPosition[1])
+                if time< self.testOnset: # draw adaptors   
+                    # draw crosses
+                    if i==3 or i==4:
                         # vertical
-                        self.startInputImage[self.centerPosition[0]-self.adaptorSize/2-1:self.centerPosition[0]+self.adaptorSize/2:1, self.centerPosition[1]-self.adaptorSize/6-1:self.centerPosition[1]+self.adaptorSize/6:1]=testColor
+                        self.startInputImage[self.centerPosition[0]-self.adaptorSize/2-1:self.centerPosition[0]+self.adaptorSize/2:1, self.centerPosition[1]-self.adaptorSize/6-1:self.centerPosition[1]+self.adaptorSize/6:1]=self.gray+self.adaptorColorChange
                         # horizontal
-                        self.startInputImage[self.centerPosition[0]-self.adaptorSize/6-1:self.centerPosition[0]+self.adaptorSize/6:1, self.centerPosition[1]-self.adaptorSize/2-1:self.centerPosition[1]+self.adaptorSize/2:1]=testColor   
-                
-            if condition==1: # Blob 
-                self.adaptorSize=42
-                self.centerPosition=[0,0]
-                self.startInputImage = np.zeros((self.i_x, self.i_y))
-                if time< self.testOnset:  # draw adaptors   
-                    # right (blurry square)
-                    self.centerPosition = [self.i_x/2, 3*self.i_y/4]
-                    self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]= self.adaptorColorChange
-                    # blur entire image before putting other elements on
-                    temp = np.ones(10)/100;
-                    Blur = scipy.ndimage.convolve1d(self.startInputImage, temp)
-                    self.startInputImage = Blur + self.gray;  
-                    # left
-                    self.centerPosition = [self.i_x/2, self.i_y/4];
-                    self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
-                    self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
+                        self.startInputImage[self.centerPosition[0]-self.adaptorSize/6-1:self.centerPosition[0]+self.adaptorSize/6:1, self.centerPosition[1]-self.adaptorSize/2-1:self.centerPosition[1]+self.adaptorSize/2:1]=self.gray+self.adaptorColorChange
+                        # make outline, by cutting middle
+                        self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2 -1:1, self.centerPosition[1]-self.adaptorSize/6:self.centerPosition[1]+self.adaptorSize/6-1:1]=self.gray
+                        self.startInputImage[self.centerPosition[0]-self.adaptorSize/6:self.centerPosition[0]+self.adaptorSize/6 -1:1, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2-1:1]=self.gray
                 else: # draw test stimuli
-                   self.startInputImage =  np.ones((self.i_x, self.i_y))*self.gray;
-                   self.centerPosition = [self.i_x/2, self.i_y/4];
-                   self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.testColorChange
-                   self.centerPosition = [self.i_x/2, 3*self.i_y/4];
-                   self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.testColorChange    
-                
-            if condition==2: # SizeMatch 
-                self.adaptorSize=42
-                self.centerPosition=[0,0]
-                self.startInputImage = np.ones((self.i_x, self.i_y))*self.gray
-                if time< self.testOnset:  # draw adaptors   
-                   # left
-                   self.adaptorSize = 54
-                   self.centerPosition = [round(2*self.i_x/3), self.i_y/4]
-                   self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
-                   self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
-                   # right
-                   self.adaptorSize = 30
-                   self.centerPosition = [round(2*self.i_x/3),3*self.i_y/4]
-                   self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
-                   self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
-                   # top
-                   self.adaptorSize = 42
-                   self.centerPosition = [self.i_x/4,2*self.i_y/4]
-                   self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
-                   self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray  
-                else: # draw test stimuli
-                    # left
-                    self.centerPosition = [round(2*self.i_x/3), self.i_y/4]
-                    self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.testColorChange
-                    # right
-                    self.centerPosition = [round(2*self.i_x/3), 3*self.i_y/4]
-                    self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.testColorChange
-                    # top
-                    self.centerPosition = [self.i_x/4, self.i_y/2]
-                    self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.testColorChange
-                
-            if condition==3: # Bipartite 
-                self.adaptorSize=120
-                self.centerPosition=[0,0]
-                self.startInputImage = np.ones((self.i_x, self.i_y))*self.gray
-                if time< self.testOnset:  # draw adaptors   
-                     # center vertical line
-                     self.centerPosition = [self.i_x/2, self.i_y/2]
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-1:self.centerPosition[1]+1]=self.gray+self.adaptorColorChange              
-                else:
-                     # draw test stimuli
-                     # darker gray for background
-                     self.startInputImage = (np.ones((self.i_x, self.i_y))*self.gray)-30 
-                     # left side
-                     self.centerPosition = [self.i_x/2, self.i_y/2]
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]]=self.gray+self.testColorChange                  
-                      # right side
-                     self.centerPosition = [self.i_x/2, self.i_y/2]
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]:self.centerPosition[1]+self.adaptorSize/2]=self.gray
+                    testColor = self.gray+testColorChange
+                    if i==1 or i==3:
+                        testColor=self.gray-testColorChange
+                    # vertical
+                    self.startInputImage[self.centerPosition[0]-self.adaptorSize/2-1:self.centerPosition[0]+self.adaptorSize/2:1, self.centerPosition[1]-self.adaptorSize/6-1:self.centerPosition[1]+self.adaptorSize/6:1]=testColor
+                    # horizontal
+                    self.startInputImage[self.centerPosition[0]-self.adaptorSize/6-1:self.centerPosition[0]+self.adaptorSize/6:1, self.centerPosition[1]-self.adaptorSize/2-1:self.centerPosition[1]+self.adaptorSize/2:1]=testColor   
             
-            if condition==4: # Pyramids
-                self.startInputImage = np.ones((self.i_x, self.i_y))*self.gray
-                if time< self.testOnset:  # draw adaptors
-                    for self.adaptorSize in np.arange(62,10,-16):
-                         # right 
-                         self.centerPosition = [self.i_x/2, 3*self.i_y/4]
-                         self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
-                         self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
-                         # left
-                         self.centerPosition = [self.i_x/2, self.i_y/4]
-                         self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
-                         self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
-                else: # draw test stimuli
-                    self.startInputImage =  np.ones((self.i_x, self.i_y))*self.gray
-                    # draw pyramids
-                    count=1
-                    for self.adaptorSize in np.arange(62,10,-16):
-                        self.centerPosition = [self.i_x/2, self.i_y/4]
-                        self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray-self.testColorChange*count
-                        self.centerPosition = [self.i_x/2, 3*self.i_y/4]
-                        self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.testColorChange*count    
-                        count=count+1
-                    count=count-1
-                    # draw comparison centers
-                    self.centerPosition = [self.i_x/4, self.i_y/4]
-                    self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray-self.testColorChange*count
-                    self.centerPosition = [self.i_x/4, 3*self.i_y/4]
-                    self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.testColorChange*count    
+        if condition==1: # Blob 
+            self.adaptorSize=42
+            self.centerPosition=[0,0]
+            self.startInputImage = np.zeros((self.i_x, self.i_y))
+            if time< self.testOnset:  # draw adaptors   
+                # right (blurry square)
+                self.centerPosition = [self.i_x/2, 3*self.i_y/4]
+                self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]= self.adaptorColorChange
+                # blur entire image before putting other elements on
+                temp = np.ones(10)/100;
+                Blur = scipy.ndimage.convolve1d(self.startInputImage, temp)
+                self.startInputImage = Blur + self.gray;  
+                # left
+                self.centerPosition = [self.i_x/2, self.i_y/4];
+                self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
+                self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
+            else: # draw test stimuli
+               self.startInputImage =  np.ones((self.i_x, self.i_y))*self.gray;
+               self.centerPosition = [self.i_x/2, self.i_y/4];
+               self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+testColorChange
+               self.centerPosition = [self.i_x/2, 3*self.i_y/4];
+               self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+testColorChange    
+            
+        if condition==2: # SizeMatch 
+            self.adaptorSize=42
+            self.centerPosition=[0,0]
+            self.startInputImage = np.ones((self.i_x, self.i_y))*self.gray
+            if time< self.testOnset:  # draw adaptors   
+               # left
+               self.adaptorSize = 54
+               self.centerPosition = [round(2*self.i_x/3), self.i_y/4]
+               self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
+               self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
+               # right
+               self.adaptorSize = 30
+               self.centerPosition = [round(2*self.i_x/3),3*self.i_y/4]
+               self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
+               self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
+               # top
+               self.adaptorSize = 42
+               self.centerPosition = [self.i_x/4,2*self.i_y/4]
+               self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
+               self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray  
+            else: # draw test stimuli
+                # left
+                self.centerPosition = [round(2*self.i_x/3), self.i_y/4]
+                self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+testColorChange
+                # right
+                self.centerPosition = [round(2*self.i_x/3), 3*self.i_y/4]
+                self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+testColorChange
+                # top
+                self.centerPosition = [self.i_x/4, self.i_y/2]
+                self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+testColorChange
+            
+        if condition==3: # Bipartite 
+            self.adaptorSize=120
+            self.centerPosition=[0,0]
+            self.startInputImage = np.ones((self.i_x, self.i_y))*self.gray
+            if time< self.testOnset:  # draw adaptors   
+                 # center vertical line
+                 self.centerPosition = [self.i_x/2, self.i_y/2]
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-1:self.centerPosition[1]+1]=self.gray+self.adaptorColorChange              
+            else:
+                 # draw test stimuli
+                 # darker gray for background
+                 self.startInputImage = (np.ones((self.i_x, self.i_y))*self.gray)-30 
+                 # left side
+                 self.centerPosition = [self.i_x/2, self.i_y/2]
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]]=self.gray+testColorChange                  
+                  # right side
+                 self.centerPosition = [self.i_x/2, self.i_y/2]
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]:self.centerPosition[1]+self.adaptorSize/2]=self.gray
         
-            if condition==5: # Annuli 
-                self.centerPosition=[0, 0]
-                self.startInputImage = np.ones((self.i_x, self.i_y))*self.gray
-                if time< self.testOnset:  # draw adaptors  (lines are thicker than for other demos) 
-                     # right, top
-                     self.centerPosition = [self.i_x/4, 3*self.i_y/4]
-                     self.adaptorSize=42+2
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
-                     self.adaptorSize= self.adaptorSize-2
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
-                     # right, bottom
-                     self.adaptorSize=18+2
-                     self.centerPosition = [3*self.i_x/4, 3*self.i_y/4]
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
-                     self.adaptorSize= self.adaptorSize-2
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
-                     # left, top
-                     self.adaptorSize=42+2
-                     self.centerPosition = [self.i_x/4, self.i_y/4]
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
-                     self.adaptorSize= self.adaptorSize-2
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
-                     # left, bottom
-                     self.centerPosition = [3*self.i_x/4, self.i_y/4]
-                     self.adaptorSize=18+2
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
-                     self.adaptorSize= self.adaptorSize-2
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray              
-                else: # draw test stimuli                
-                     # right, top
-                     self.adaptorSize=42
-                     self.centerPosition = [self.i_x/4, 3*self.i_y/4]
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.testColorChange
-                     self.adaptorSize=18
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
-                     # right, bottom
-                     self.adaptorSize=42
-                     self.centerPosition = [3*self.i_x/4, 3*self.i_y/4]
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.testColorChange
-                     self.adaptorSize=18
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
-                     # left, top
-                     self.adaptorSize=42
-                     self.centerPosition = [self.i_x/4, self.i_y/4]
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray-self.testColorChange
-                     self.adaptorSize=18
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
-                     # left, bottom
-                     self.centerPosition = [3*self.i_x/4, self.i_y/4]
-                     self.adaptorSize=42
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray-self.testColorChange
-                     self.adaptorSize=18;
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
-                     
-            if condition==6: # Incomplete 
-                self.adaptorSize=84
-                self.centerPosition=[0,0]
-                self.startInputImage = np.ones((self.i_x, self.i_y))*self.gray
-                if time< self.testOnset:  # draw adaptors  (lines are thicker than for other demos) 
-                     # right, top
-                     self.centerPosition = [self.i_x/4, 3*self.i_y/4]
-                     self.adaptorSize=42+2
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
-                     self.adaptorSize= self.adaptorSize-2
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
-                     # right, bottom
-                     self.adaptorSize=18+2
-                     self.centerPosition = [3*self.i_x/4, 3*self.i_y/4]
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
-                     self.adaptorSize= self.adaptorSize-2
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
-                     # left, top
-                     self.adaptorSize=42+2
-                     self.centerPosition = [self.i_x/4, self.i_y/4]
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
-                     self.adaptorSize= self.adaptorSize-2
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
-                     # left, bottom
-                     self.centerPosition = [3*self.i_x/4, self.i_y/4]
-                     self.adaptorSize=18+2
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
-                     self.adaptorSize= self.adaptorSize-2
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray              
-                else: # draw test stimuli                
-                     # right, top
-                     self.adaptorSize=42
-                     self.centerPosition = [self.i_x/4, 3*self.i_y/4]
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.testColorChange
-                     self.adaptorSize=18
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
-                     # right, bottom
-                     self.adaptorSize=42
-                     self.centerPosition = [3*self.i_x/4, 3*self.i_y/4]
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.testColorChange
-                     self.adaptorSize=18
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
-                     # left, top
-                     self.adaptorSize=42
-                     self.centerPosition = [self.i_x/4, self.i_y/4]
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray-self.testColorChange
-                     self.adaptorSize=18
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
-                     # left, bottom
-                     self.centerPosition = [3*self.i_x/4, self.i_y/4]
-                     self.adaptorSize=42
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray-self.testColorChange
-                     self.adaptorSize=18;
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray     
-               
-            if condition==7: # Robinson-deSa 2013
-                self.adaptorSize=42
-                self.centerPosition=[0,0]
-                self.startInputImage = np.zeros((self.i_x, self.i_y))
-                if time< self.testOnset:  # draw adaptors   
-                     self.startInputImage[:,:]= self.gray + self.adaptorColorChange
+        if condition==4: # Pyramids
+            self.startInputImage = np.ones((self.i_x, self.i_y))*self.gray
+            if time< self.testOnset:  # draw adaptors
+                for self.adaptorSize in np.arange(62,10,-16):
                      # right 
                      self.centerPosition = [self.i_x/2, 3*self.i_y/4]
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray
+                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
+                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
                      # left
                      self.centerPosition = [self.i_x/2, self.i_y/4]
-                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray
-                else: # draw test stimuli
-                      # equal-sized test stimulus
-                      self.startInputImage =  np.ones((self.i_x, self.i_y))*self.gray
-                      self.centerPosition = [self.i_x/2, self.i_y/4];
-                      self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.testColorChange
-                      # small test stimulus
-                      self.centerPosition = [self.i_x/2, 3*self.i_y/4];
-                      self.startInputImage[self.centerPosition[0]-np.round(self.adaptorSize/4):self.centerPosition[0]+np.round(self.adaptorSize/4), self.centerPosition[1]-np.round(self.adaptorSize/4):self.centerPosition[1]+np.round(self.adaptorSize/4)]=self.gray+self.testColorChange    
+                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
+                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
+            else: # draw test stimuli
+                self.startInputImage =  np.ones((self.i_x, self.i_y))*self.gray
+                # draw pyramids
+                count=1
+                for self.adaptorSize in np.arange(62,10,-16):
+                    self.centerPosition = [self.i_x/2, self.i_y/4]
+                    self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray-testColorChange*count
+                    self.centerPosition = [self.i_x/2, 3*self.i_y/4]
+                    self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+testColorChange*count    
+                    count=count+1
+                count=count-1
+                # draw comparison centers
+                self.centerPosition = [self.i_x/4, self.i_y/4]
+                self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray-testColorChange*count
+                self.centerPosition = [self.i_x/4, 3*self.i_y/4]
+                self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+testColorChange*count    
+    
+        if condition==5: # Annuli 
+            self.centerPosition=[0, 0]
+            self.startInputImage = np.ones((self.i_x, self.i_y))*self.gray
+            if time< self.testOnset:  # draw adaptors  (lines are thicker than for other demos) 
+                 # right, top
+                 self.centerPosition = [self.i_x/4, 3*self.i_y/4]
+                 self.adaptorSize=42+2
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
+                 self.adaptorSize= self.adaptorSize-2
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
+                 # right, bottom
+                 self.adaptorSize=18+2
+                 self.centerPosition = [3*self.i_x/4, 3*self.i_y/4]
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
+                 self.adaptorSize= self.adaptorSize-2
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
+                 # left, top
+                 self.adaptorSize=42+2
+                 self.centerPosition = [self.i_x/4, self.i_y/4]
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
+                 self.adaptorSize= self.adaptorSize-2
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
+                 # left, bottom
+                 self.centerPosition = [3*self.i_x/4, self.i_y/4]
+                 self.adaptorSize=18+2
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
+                 self.adaptorSize= self.adaptorSize-2
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray              
+            else: # draw test stimuli                
+                 # right, top
+                 self.adaptorSize=42
+                 self.centerPosition = [self.i_x/4, 3*self.i_y/4]
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+testColorChange
+                 self.adaptorSize=18
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
+                 # right, bottom
+                 self.adaptorSize=42
+                 self.centerPosition = [3*self.i_x/4, 3*self.i_y/4]
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+testColorChange
+                 self.adaptorSize=18
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
+                 # left, top
+                 self.adaptorSize=42
+                 self.centerPosition = [self.i_x/4, self.i_y/4]
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray-testColorChange
+                 self.adaptorSize=18
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
+                 # left, bottom
+                 self.centerPosition = [3*self.i_x/4, self.i_y/4]
+                 self.adaptorSize=42
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray-testColorChange
+                 self.adaptorSize=18;
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
+                 
+        if condition==6: # Incomplete 
+            self.adaptorSize=84
+            self.centerPosition=[0,0]
+            self.startInputImage = np.ones((self.i_x, self.i_y))*self.gray
+            if time< self.testOnset:  # draw adaptors  (lines are thicker than for other demos) 
+                 # right, top
+                 self.centerPosition = [self.i_x/4, 3*self.i_y/4]
+                 self.adaptorSize=42+2
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
+                 self.adaptorSize= self.adaptorSize-2
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
+                 # right, bottom
+                 self.adaptorSize=18+2
+                 self.centerPosition = [3*self.i_x/4, 3*self.i_y/4]
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
+                 self.adaptorSize= self.adaptorSize-2
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
+                 # left, top
+                 self.adaptorSize=42+2
+                 self.centerPosition = [self.i_x/4, self.i_y/4]
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
+                 self.adaptorSize= self.adaptorSize-2
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
+                 # left, bottom
+                 self.centerPosition = [3*self.i_x/4, self.i_y/4]
+                 self.adaptorSize=18+2
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
+                 self.adaptorSize= self.adaptorSize-2
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray              
+            else: # draw test stimuli                
+                 # right, top
+                 self.adaptorSize=42
+                 self.centerPosition = [self.i_x/4, 3*self.i_y/4]
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+testColorChange
+                 self.adaptorSize=18
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
+                 # right, bottom
+                 self.adaptorSize=42
+                 self.centerPosition = [3*self.i_x/4, 3*self.i_y/4]
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+testColorChange
+                 self.adaptorSize=18
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
+                 # left, top
+                 self.adaptorSize=42
+                 self.centerPosition = [self.i_x/4, self.i_y/4]
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray-testColorChange
+                 self.adaptorSize=18
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
+                 # left, bottom
+                 self.centerPosition = [3*self.i_x/4, self.i_y/4]
+                 self.adaptorSize=42
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray-testColorChange
+                 self.adaptorSize=18;
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray     
+           
+        if condition==7: # Robinson-deSa 2013
+            self.adaptorSize=42
+            self.centerPosition=[0,0]
+            self.startInputImage = np.zeros((self.i_x, self.i_y))
+            if time< self.testOnset:  # draw adaptors   
+                 self.startInputImage[:,:]= self.gray + self.adaptorColorChange
+                 # right 
+                 self.centerPosition = [self.i_x/2, 3*self.i_y/4]
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray
+                 # left
+                 self.centerPosition = [self.i_x/2, self.i_y/4]
+                 self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray
+            else: # draw test stimuli
+                  # equal-sized test stimulus
+                  self.startInputImage =  np.ones((self.i_x, self.i_y))*self.gray
+                  self.centerPosition = [self.i_x/2, self.i_y/4];
+                  self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+testColorChange
+                  # small test stimulus
+                  self.centerPosition = [self.i_x/2, 3*self.i_y/4];
+                  self.startInputImage[self.centerPosition[0]-np.round(self.adaptorSize/4):self.centerPosition[0]+np.round(self.adaptorSize/4), self.centerPosition[1]-np.round(self.adaptorSize/4):self.centerPosition[1]+np.round(self.adaptorSize/4)]=self.gray+testColorChange    
+            
+        if condition==8: # Robinson-deSa2012-E1 (stimulus sizes multiply degrees by 10 for pixels)
+            # (self.adaptorSize (100,40,20),self.testSize (20,100))
+            self.adaptorSize=100
+            self.testSize=100
+            self.centerPosition=[0,0]
+            self.startInputImage = np.zeros((self.i_x, self.i_y))
+            if time< self.testOnset:  # draw adaptors   
+                self.startInputImage[:,:]= self.gray
+                 # centered 
+                self.centerPosition = [self.i_x/2, self.i_y/2];
+                self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]= self.gray + self.adaptorColorChange
+            else: # draw test stimulus
+                 self.startInputImage =  np.ones((self.i_x, self.i_y))*self.gray
+                 # left
+                 self.centerPosition = [self.i_x/2, self.i_y/2];
+                 self.startInputImage[self.centerPosition[0]-self.testSize/2:self.centerPosition[0]+self.testSize/2, self.centerPosition[1]-self.testSize/2:self.centerPosition[1]+self.testSize/2]=self.gray+testColorChange;
+    
+        if condition==9: # Robinson-deSa2012-E2 (stimulus sizes multiply degrees by 10 for pixels)
+            # (self.adaptorSize, middleAdaptorSize, self.innerAdaptorSize,self.testSize)
+             self.adaptorSize=140
+             self.middleAdaptorSize=100
+             self.innerAdaptorSize=0
+             self.testSize=100
+             self.centerPosition=[0,0]
+             self.startInputImage = np.zeros((self.i_x, self.i_y))
+             if time< self.testOnset:  # draw adaptors   
+                  self.startInputImage[:,:]= self.gray
+                  # centered 
+                  self.centerPosition = [self.i_x/2, self.i_y/2]
+                  # outer edge
+                  # upper left
+                  self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0], self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]]= self.gray + self.adaptorColorChange
+                  # bottom left
+                  self.startInputImage[self.centerPosition[0]:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]]= self.gray - self.adaptorColorChange
+                  # upper right
+                  self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0], self.centerPosition[1]:self.centerPosition[1]+self.adaptorSize/2]= self.gray - self.adaptorColorChange
+                  # bottom right
+                  self.startInputImage[self.centerPosition[0]:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]:self.centerPosition[1]+self.adaptorSize/2]= self.gray + self.adaptorColorChange
+                  # middle edge
+                  # upper left
+                  self.startInputImage[self.centerPosition[0]-self.self.middleAdaptorSize/2:self.centerPosition[0], self.centerPosition[1]-self.self.middleAdaptorSize/2:self.centerPosition[1]]= self.gray - self.adaptorColorChange
+                  # bottom left
+                  self.startInputImage[self.centerPosition[0]:self.centerPosition[0]+self.self.middleAdaptorSize/2, self.centerPosition[1]-self.self.middleAdaptorSize/2:self.centerPosition[1]]= self.gray + self.adaptorColorChange
+                  # upper right
+                  self.startInputImage[self.centerPosition[0]-self.self.middleAdaptorSize/2:self.centerPosition[0], self.centerPosition[1]:self.centerPosition[1]+self.self.middleAdaptorSize/2]= self.gray + self.adaptorColorChange
+                  # bottom right
+                  self.startInputImage[self.centerPosition[0]:self.centerPosition[0]+self.self.middleAdaptorSize/2, self.centerPosition[1]:self.centerPosition[1]+self.self.middleAdaptorSize/2]= self.gray - self.adaptorColorChange
+                  # gray interior
+                  if self.innerAdaptorSize>0:
+                      self.startInputImage[self.centerPosition[0]-self.innerAdaptorSize/2:self.centerPosition[0]+self.innerAdaptorSize/2, self.centerPosition[1]-self.innerAdaptorSize/2:self.centerPosition[1]+self.innerAdaptorSize/2]= self.gray
+             else: # draw test stimulus
+                   self.startInputImage =  np.ones((self.i_x, self.i_y))*self.gray
+                   # left
+                   self.centerPosition = [self.i_x/2, self.i_y/2]
+                   self.startInputImage[self.centerPosition[0]-self.testSize/2:self.centerPosition[0]+self.testSize/2, self.centerPosition[1]-self.testSize/2:self.centerPosition[1]+self.testSize/2]=self.gray+testColorChange 
                 
-            if condition==8: # Robinson-deSa2012-E1 (stimulus sizes multiply degrees by 10 for pixels)
-                # (self.adaptorSize (100,40,20),self.testSize (20,100))
-                self.adaptorSize=100
-                self.testSize=100
-                self.centerPosition=[0,0]
-                self.startInputImage = np.zeros((self.i_x, self.i_y))
-                if time< self.testOnset:  # draw adaptors   
-                    self.startInputImage[:,:]= self.gray
-                     # centered 
-                    self.centerPosition = [self.i_x/2, self.i_y/2];
-                    self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]= self.gray + self.adaptorColorChange
-                else: # draw test stimulus
-                     self.startInputImage =  np.ones((self.i_x, self.i_y))*self.gray
-                     # left
-                     self.centerPosition = [self.i_x/2, self.i_y/2];
-                     self.startInputImage[self.centerPosition[0]-self.testSize/2:self.centerPosition[0]+self.testSize/2, self.centerPosition[1]-self.testSize/2:self.centerPosition[1]+self.testSize/2]=self.gray+self.testColorChange;
+        if condition==10: # Prediction 
+            self.testSize=50
+            self.centerPosition=[0,0]
+            self.startInputImage = np.ones((self.i_x, self.i_y))*self.gray
+            if time< self.testOnset:  # draw adaptors 
+                # illusory contour on left
+                for self.adaptorSize in np.arange(32,5,-8):
+                    # topright 
+                    self.centerPosition = [3*self.i_x/8, self.i_y/2-self.testSize/2 - self.testSize];
+                    self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
+                    self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
+                    # leftright
+                    self.centerPosition = [3*self.i_x/8, self.i_y/2+self.testSize/2- self.testSize];
+                    self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
+                    self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
         
-            if condition==9: # Robinson-deSa2012-E2 (stimulus sizes multiply degrees by 10 for pixels)
-                # (self.adaptorSize, middleAdaptorSize, self.innerAdaptorSize,self.testSize)
-                 self.adaptorSize=140
-                 self.middleAdaptorSize=100
-                 self.innerAdaptorSize=0
-                 self.testSize=100
-                 self.centerPosition=[0,0]
-                 self.startInputImage = np.zeros((self.i_x, self.i_y))
-                 if time< self.testOnset:  # draw adaptors   
-                      self.startInputImage[:,:]= self.gray
-                      # centered 
-                      self.centerPosition = [self.i_x/2, self.i_y/2]
-                      # outer edge
-                      # upper left
-                      self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0], self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]]= self.gray + self.adaptorColorChange
-                      # bottom left
-                      self.startInputImage[self.centerPosition[0]:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]]= self.gray - self.adaptorColorChange
-                      # upper right
-                      self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0], self.centerPosition[1]:self.centerPosition[1]+self.adaptorSize/2]= self.gray - self.adaptorColorChange
-                      # bottom right
-                      self.startInputImage[self.centerPosition[0]:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]:self.centerPosition[1]+self.adaptorSize/2]= self.gray + self.adaptorColorChange
-                      # middle edge
-                      # upper left
-                      self.startInputImage[self.centerPosition[0]-self.self.middleAdaptorSize/2:self.centerPosition[0], self.centerPosition[1]-self.self.middleAdaptorSize/2:self.centerPosition[1]]= self.gray - self.adaptorColorChange
-                      # bottom left
-                      self.startInputImage[self.centerPosition[0]:self.centerPosition[0]+self.self.middleAdaptorSize/2, self.centerPosition[1]-self.self.middleAdaptorSize/2:self.centerPosition[1]]= self.gray + self.adaptorColorChange
-                      # upper right
-                      self.startInputImage[self.centerPosition[0]-self.self.middleAdaptorSize/2:self.centerPosition[0], self.centerPosition[1]:self.centerPosition[1]+self.self.middleAdaptorSize/2]= self.gray + self.adaptorColorChange
-                      # bottom right
-                      self.startInputImage[self.centerPosition[0]:self.centerPosition[0]+self.self.middleAdaptorSize/2, self.centerPosition[1]:self.centerPosition[1]+self.self.middleAdaptorSize/2]= self.gray - self.adaptorColorChange
-                      # gray interior
-                      if self.innerAdaptorSize>0:
-                          self.startInputImage[self.centerPosition[0]-self.innerAdaptorSize/2:self.centerPosition[0]+self.innerAdaptorSize/2, self.centerPosition[1]-self.innerAdaptorSize/2:self.centerPosition[1]+self.innerAdaptorSize/2]= self.gray
-                 else: # draw test stimulus
-                       self.startInputImage =  np.ones((self.i_x, self.i_y))*self.gray
-                       # left
-                       self.centerPosition = [self.i_x/2, self.i_y/2]
-                       self.startInputImage[self.centerPosition[0]-self.testSize/2:self.centerPosition[0]+self.testSize/2, self.centerPosition[1]-self.testSize/2:self.centerPosition[1]+self.testSize/2]=self.gray+self.testColorChange 
-                    
-            if condition==10: # Prediction 
-                self.testSize=50
-                self.centerPosition=[0,0]
-                self.startInputImage = np.ones((self.i_x, self.i_y))*self.gray
-                if time< self.testOnset:  # draw adaptors 
-                    # illusory contour on left
-                    for self.adaptorSize in np.arange(32,5,-8):
-                        # topright 
-                        self.centerPosition = [3*self.i_x/8, self.i_y/2-self.testSize/2 - self.testSize];
-                        self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
-                        self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
-                        # leftright
-                        self.centerPosition = [3*self.i_x/8, self.i_y/2+self.testSize/2- self.testSize];
-                        self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
-                        self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
+                    # bottomright 
+                    self.centerPosition = [3*self.i_x/8+self.testSize, self.i_y/2-self.testSize/2- self.testSize]
+                    self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
+                    self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
+                    # bottomleft
+                    self.centerPosition = [3*self.i_x/8+self.testSize, self.i_y/2+self.testSize/2- self.testSize]
+                    self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
+                    self.startinputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray  
+                # middle gray  
+                tempinputImage = np.ones((self.i_x, self.i_y))*self.gray
+                # copy and paste from temp to startinput
+                self.centerPosition = [self.i_x/2, self.i_y/2- self.testSize]
+                self.startInputImage[self.centerPosition[0]-self.testSize/2+1:self.centerPosition[0]+self.testSize/2 -1, self.centerPosition[1]-self.testSize/2+1:self.centerPosition[1]+self.testSize/2-1]=tempinputImage[self.centerPosition[0]-self.testSize/2+1:self.centerPosition[0]+self.testSize/2 -1, self.centerPosition[1]-self.testSize/2+1:self.centerPosition[1]+self.testSize/2-1]                   
+        
+                # drawn contour on right
+                for self.adaptorSize in np.arange(32,5,-8):
+                    # topright 
+                     self.centerPosition = [3*self.i_x/8, self.i_y/2-self.testSize/2 + self.testSize]
+                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
+                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
+                     # leftright
+                     self.centerPosition = [3*self.i_x/8, self.i_y/2+self.testSize/2+ self.testSize]
+                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
+                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
+         
+                     # bottomright 
+                     self.centerPosition = [3*self.i_x/8+self.testSize, self.i_y/2-self.testSize/2+ self.testSize]
+                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
+                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
+                     # bottomleft
+                     self.centerPosition = [3*self.i_x/8+self.testSize, self.i_y/2+self.testSize/2+ self.testSize]
+                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
+                     self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
+                     
+                # draw line 
+                self.centerPosition = [self.i_x/2, self.i_y/2 + self.testSize]
+                self.startInputImage[self.centerPosition[0]-self.testSize/2+1:self.centerPosition[0]+self.testSize/2 , self.centerPosition[1]-self.testSize/2+1:self.centerPosition[1]+self.testSize/2]=self.gray+self.adaptorColorChange
+                self.startInputImage[self.centerPosition[0]-self.testSize/2+2:self.centerPosition[0]+self.testSize/2 -1 , self.centerPosition[1]-self.testSize/2+2:self.centerPosition[1]+self.testSize/2-1]=self.gray
+               
+            else: # draw test stimuli
+                self.startInputImage =  np.ones((self.i_x, self.i_y))*self.gray
+                #left gray
+                self.centerPosition = [self.i_x/2, self.i_y/2 - self.testSize]
+                self.startInputImage[self.centerPosition[0]-self.testSize/2+1:self.centerPosition[0]+self.testSize/2 -1, self.centerPosition[1]-self.testSize/2+1:self.centerPosition[1]+self.testSize/2-1]=self.gray+testColorChange
+                #right gray
+                self.centerPosition = [self.i_x/2, self.i_y/2 + self.testSize]
+                self.startInputImage[self.centerPosition[0]-self.testSize/2+1:self.centerPosition[0]+self.testSize/2 -1, self.centerPosition[1]-self.testSize/2+1:self.centerPosition[1]+self.testSize/2-1]=self.gray+testColorChange 
+        
+        if condition == 11: #Whites illusion
+            self.startInputImage = np.ones((self.i_x, self.i_y))*self.gray
+            stim, mask_dark, mask_bright = wi.evaluate()
+            if time< self.testOnset: # Show adaptors (mask)
+                if self.adaptorColorChange == self.gray:
+                    self.startInputImage= mask_bright
+                else:
+                    self.startInputImage= mask_dark
+            else: # Show test stimuli
+                self.startInputImage = stim
+        
+        
+        # fixation markers
+        self.startInputImage[self.i_x/2-2,self.i_y/2-2]=255
+        self.startInputImage[self.i_x/2  ,self.i_y/2  ]=255
+        self.startInputImage[self.i_x/2-2,self.i_y/2  ]=0
+        self.startInputImage[self.i_x/2  ,self.i_y/2-2]=0
+                  
+        # Convert RGB input image to red-green, blue-yellow, white-black coordinates
+        self.inputImage = np.zeros((200,200,3))
+        self.inputImage[:,:,0] = self.startInputImage
+        self.inputImage[:,:,1] = self.startInputImage
+        self.inputImage[:,:,2] = self.startInputImage
+        out = ConvertRGBtoOpponentColor(self.inputImage, self.gray)
+        self.rg=out[0]
+        self.by=out[1]
+        self.wb=out[2]
+        
             
-                        # bottomright 
-                        self.centerPosition = [3*self.i_x/8+self.testSize, self.i_y/2-self.testSize/2- self.testSize]
-                        self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
-                        self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
-                        # bottomleft
-                        self.centerPosition = [3*self.i_x/8+self.testSize, self.i_y/2+self.testSize/2- self.testSize]
-                        self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
-                        self.startinputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray  
-                    # middle gray  
-                    tempinputImage = np.ones((self.i_x, self.i_y))*self.gray
-                    # copy and paste from temp to startinput
-                    self.centerPosition = [self.i_x/2, self.i_y/2- self.testSize]
-                    self.startInputImage[self.centerPosition[0]-self.testSize/2+1:self.centerPosition[0]+self.testSize/2 -1, self.centerPosition[1]-self.testSize/2+1:self.centerPosition[1]+self.testSize/2-1]=tempinputImage[self.centerPosition[0]-self.testSize/2+1:self.centerPosition[0]+self.testSize/2 -1, self.centerPosition[1]-self.testSize/2+1:self.centerPosition[1]+self.testSize/2-1]                   
-            
-                    # drawn contour on right
-                    for self.adaptorSize in np.arange(32,5,-8):
-                        # topright 
-                         self.centerPosition = [3*self.i_x/8, self.i_y/2-self.testSize/2 + self.testSize]
-                         self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
-                         self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
-                         # leftright
-                         self.centerPosition = [3*self.i_x/8, self.i_y/2+self.testSize/2+ self.testSize]
-                         self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
-                         self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
-             
-                         # bottomright 
-                         self.centerPosition = [3*self.i_x/8+self.testSize, self.i_y/2-self.testSize/2+ self.testSize]
-                         self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
-                         self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
-                         # bottomleft
-                         self.centerPosition = [3*self.i_x/8+self.testSize, self.i_y/2+self.testSize/2+ self.testSize]
-                         self.startInputImage[self.centerPosition[0]-self.adaptorSize/2:self.centerPosition[0]+self.adaptorSize/2, self.centerPosition[1]-self.adaptorSize/2:self.centerPosition[1]+self.adaptorSize/2]=self.gray+self.adaptorColorChange
-                         self.startInputImage[self.centerPosition[0]-self.adaptorSize/2+1:self.centerPosition[0]+self.adaptorSize/2 -1, self.centerPosition[1]-self.adaptorSize/2+1:self.centerPosition[1]+self.adaptorSize/2-1]=self.gray
-                         
-                    # draw line 
-                    self.centerPosition = [self.i_x/2, self.i_y/2 + self.testSize]
-                    self.startInputImage[self.centerPosition[0]-self.testSize/2+1:self.centerPosition[0]+self.testSize/2 , self.centerPosition[1]-self.testSize/2+1:self.centerPosition[1]+self.testSize/2]=self.gray+self.adaptorColorChange
-                    self.startInputImage[self.centerPosition[0]-self.testSize/2+2:self.centerPosition[0]+self.testSize/2 -1 , self.centerPosition[1]-self.testSize/2+2:self.centerPosition[1]+self.testSize/2-1]=self.gray
-                   
-                else: # draw test stimuli
-                    self.startInputImage =  np.ones((self.i_x, self.i_y))*self.gray
-                    #left gray
-                    self.centerPosition = [self.i_x/2, self.i_y/2 - self.testSize]
-                    self.startInputImage[self.centerPosition[0]-self.testSize/2+1:self.centerPosition[0]+self.testSize/2 -1, self.centerPosition[1]-self.testSize/2+1:self.centerPosition[1]+self.testSize/2-1]=self.gray+self.testColorChange
-                    #right gray
-                    self.centerPosition = [self.i_x/2, self.i_y/2 + self.testSize]
-                    self.startInputImage[self.centerPosition[0]-self.testSize/2+1:self.centerPosition[0]+self.testSize/2 -1, self.centerPosition[1]-self.testSize/2+1:self.centerPosition[1]+self.testSize/2-1]=self.gray+self.testColorChange 
-            
-            # Remove start column and row, add to end, matching to Matlab indexing
-            #store = np.vstack((self.startInputImage[1::,:],self.startInputImage[0,:]))
-            #self.startInputImage = np.vstack((store[:,1::].T,store[:,0])).T
-            
-            # fixation markers
-            self.startInputImage[self.i_x/2-2,self.i_y/2-2]=255
-            self.startInputImage[self.i_x/2  ,self.i_y/2  ]=255
-            self.startInputImage[self.i_x/2-2,self.i_y/2  ]=0
-            self.startInputImage[self.i_x/2  ,self.i_y/2-2]=0
-                      
-            # Convert RGB input image to red-green, blue-yellow, white-black coordinates
-            self.inputImage[:,:,0] = self.startInputImage
-            self.inputImage[:,:,1] = self.startInputImage
-            self.inputImage[:,:,2] = self.startInputImage
-            [rg, by, wb] = ConvertRGBtoOpponentColor(self.inputImage, self.gray)
-            return rg, by, wb
-            
-    def LGNCells(self, rg, by, wb):
+    def LGNCells(self):
         """
         Usage:
         >>> LGNCells(self)
@@ -717,9 +728,9 @@ class CANNEM(object):
         
         """
         # padding
-        self.PaddingSize = math.floor(np.max(wb.shape)/2) 
-        PaddingColor = wb[0,0]
-        self.wb2 = im_padding(wb, self.PaddingSize, PaddingColor)
+        self.PaddingSize = math.floor(np.max(self.wb.shape)/2) 
+        PaddingColor = self.wb[0,0]
+        self.wb2 = im_padding(self.wb, self.PaddingSize, PaddingColor)
         # convolution - reflection of each other
         OnOff_Excite =  conv2(self.wb2, self.C, mode='same') 
         OnOff_Inhibit = conv2(self.wb2, self.E, mode='same')
@@ -744,13 +755,13 @@ class CANNEM(object):
         self.LGNwb = x_pos - x_neg
         
         # pad planes for all color channels for later use
-        PaddingColor = wb[0,0]
-        wb = im_padding(wb, self.PaddingSize, PaddingColor)
-        PaddingColor = rg[0,0]
-        rg = im_padding(rg, self.PaddingSize, PaddingColor)
-        PaddingColor = by[0,0]
-        by = im_padding(by, self.PaddingSize, PaddingColor)
-        return rg, by, wb
+        PaddingColor = self.wb[0,0]
+        self.wb = im_padding(self.wb, self.PaddingSize, PaddingColor)
+        PaddingColor = self.rg[0,0]
+        self.rg = im_padding(self.rg, self.PaddingSize, PaddingColor)
+        PaddingColor = self.by[0,0]
+        self.by = im_padding(self.by, self.PaddingSize, PaddingColor)
+        
         
     
     def simpleCell(self) :
@@ -788,7 +799,7 @@ class CANNEM(object):
             y[:,:,i]=Ini
             
         self.y = y
-    
+        
         
     def complexCell(self, boundaryUpperLimit):
         """
@@ -856,17 +867,22 @@ class CANNEM(object):
         
         
         """
+         
         
         # initialize gate on first time step
         if time==self.startTime :
             self.gate = Agate/(Bgate + Cgate*self.inI) * np.ones(self.w1.shape)
-                    
-        # identifself.y equilibrium solution to gate
+
+        
+                
+        # identifsy equilibrium solution to gate
         gate_equil = Agate/(Bgate + Cgate* self.w1)
         
         # solve gate for current time
-        self.gate = gate_equil + (self.gate - gate_equil)* np.exp(-Rhogate*(Bgate+Cgate*self.w1)*self.timeStep)
+#       if self.gate == None:
+#           self.gate = 0
         
+        self.gate = gate_equil + (self.gate - gate_equil)* np.exp(-Rhogate*(Bgate+Cgate*self.w1)*self.timeStep)
             
     def dipoleComp(self):
         """
@@ -901,9 +917,6 @@ class CANNEM(object):
         v_1 = self.gate[:,:,0]*self.w1[:,:,0] - gdAcrossWeight*self.gate[:,:,orthgonalK1]*self.w1[:,:,orthgonalK1] 
         v_2 = self.gate[:,:,1]*self.w1[:,:,1] - gdAcrossWeight*self.gate[:,:,orthgonalK2]*self.w1[:,:,orthgonalK2] 
         
-        # Delete gate for space
-        self.gate=None        
-        
         # half-wave rectify
         v_1[v_1<0] = 0  
         v_2[v_2<0] = 0
@@ -918,7 +931,7 @@ class CANNEM(object):
         self.O2[self.O2<0] = 0   
         
     
-    def fillingFIDO(self,rg, by, wb):
+    def fillingFIDO(self):
         """
         Usage: 
         >>> fillingFIDO(self)
@@ -1023,9 +1036,9 @@ class CANNEM(object):
         FIDO=FIDO_edit    
         
         # input is color signals
-        wbColor = im_cropping(wb, self.PaddingSize)
-        rgColor = im_cropping(rg, self.PaddingSize)
-        byColor = im_cropping(by, self.PaddingSize)
+        wbColor = im_cropping(self.wb, self.PaddingSize)
+        rgColor = im_cropping(self.rg, self.PaddingSize)
+        byColor = im_cropping(self.by, self.PaddingSize)
         
         # Filling-in values for white-black, red-green, and blue-self.yellow
         self.S_wb = np.zeros((sX, sY))
