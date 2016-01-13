@@ -48,8 +48,8 @@ References
     
 """
 
-condition = 11
-direction = 'h' # direction of adapting bars in condition 11 - Whites Illusion
+condition = 0
+direction = 'v' # direction of adapting bars in condition 11 - Whites Illusion
 
 # [ Frequency (cpd), Noisemask size, ppd]
 noise = [0,512,31] # Options: [0.11,0.19,0.33,0.58,1.00,1.73,3.00,5.20,9.00] (0 if none) 
@@ -633,7 +633,6 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
     x_neg[x_neg<0] = 0
     LGNwb = x_pos - x_neg
     
-    pre_pad_wb=wb
     # pad planes for all color channels for later use
     PaddingColor = wb[0,0]
     wb = image_edit.im_padding(wb, PaddingSize, PaddingColor)
@@ -725,23 +724,19 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
     O2=O1-bThresh
     O2[O2<0] = 0    
     
-    ########################## FILLING-IN DOmains [FIDOs] ######################################
-    # regions of connected boundary points, identifying distinct Filling-In DOmains (FIDOs),
-    # and then average within them
+    ######################## FILLING-IN DOmains [FIDOs] #######################
+    # regions of connected boundary points  isolate i.e.
+    # identify distinct Filling-In DOmains (FIDOs), and then average within them
     
-    BndSig = np.sum(O2[:,:,:],2) 
+    # extract and prepare boundary signal
+    BndSig = np.sum(O2[:,:,:],2)  # sum orientations
     thint = O2.shape
-    BndThr = 0.0
-    BndSig = 100*(BndSig - BndThr)
-    BndSig[BndSig < 0] = 0
+    BndSig = 100*BndSig           # boost signal
+    BndSig[BndSig < 0] = 0        # half wave rectify signal
     
-    boundaryOrientation = np.zeros((1,nOrient))
-    for i in np.arange(0,nOrient):
-        boundaryOrientation[0,i] = -np.pi/2 +(i+1)*np.pi/(nOrient)
-    
+    # size of boundary signals
     sX = np.size(BndSig, 0)
     sY = np.size(BndSig, 1)
-    
     stimarea_x = np.arange(1,np.size(BndSig, 0)-1) 
     stimarea_y = np.arange(1,np.size(BndSig, 1)-1)
     
@@ -749,27 +744,28 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
     P=np.zeros((sX,sY,4))
     for i in np.arange(0,4):
         dummy = np.ones((sX, sY))
+        # blocking boundaries
         p1 = stimarea_x + Bshift1[i,0]
         q1 = stimarea_y + Bshift1[i,1]
         p2 = stimarea_x + Bshift2[i,0]
         q2 = stimarea_y + Bshift2[i,1]
         
-        currentBoundary = np.zeros((BndSig.shape[0],BndSig.shape[1]))
+        currentBoundary  = np.zeros((BndSig.shape[0],BndSig.shape[1]))
         currentBoundary1 = np.zeros((BndSig.shape[0],BndSig.shape[1]))
         currentBoundary2 = np.zeros((BndSig.shape[0],BndSig.shape[1]))
         
         # for both orientations at each polarity
-        a1=np.abs(np.sin(shiftOrientation[i] - boundaryOrientation[0,0]))
+        a1=np.abs(np.sin(shiftOrientation[i]))
         currentBoundary1[stimarea_x[0]:stimarea_x[-1]+1:1, stimarea_y[0]:stimarea_y[-1]+1:1] = a1*(O2[p1[0]:p1[-1]+1:1,q1[0]:q1[-1]+1:1,0] + O2[p2[0]:p2[-1]+1:1,q2[0]:q2[-1]+1:1,0] )
         
-        a2=np.abs(np.sin(shiftOrientation[i] - boundaryOrientation[0,1]))
+        a2=np.abs(np.sin(shiftOrientation[i] - np.pi/2))
         currentBoundary2[stimarea_x[0]:stimarea_x[-1]+1:1, stimarea_y[0]:stimarea_y[-1]+1:1] = a2*(O2[p1[0]:p1[-1]+1:1,q1[0]:q1[-1]+1:1,1] + O2[p2[0]:p2[-1]+1:1,q2[0]:q2[-1]+1:1,1] )
         
+        # combine orientations
         currentBoundary=currentBoundary1+currentBoundary2
-        a = currentBoundary
-        a[a>0] = 1
-        a1=dummy[stimarea_x[0]:stimarea_x[-1]+1:1, stimarea_y[0]:stimarea_y[-1]+1:1]
-        a2=    a[stimarea_x[0]:stimarea_x[-1]+1:1, stimarea_y[0]:stimarea_y[-1]+1:1]
+        currentBoundary[currentBoundary>0] = 1
+        a1=          dummy[stimarea_x[0]:stimarea_x[-1]+1:1, stimarea_y[0]:stimarea_y[-1]+1:1]
+        a2=currentBoundary[stimarea_x[0]:stimarea_x[-1]+1:1, stimarea_y[0]:stimarea_y[-1]+1:1]
         
         P[stimarea_x[0]:stimarea_x[-1]+1:1, stimarea_y[0]:stimarea_y[-1]+1:1,i] =   a1- a2
             
@@ -784,20 +780,15 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
     
     # Grow each FIDO so end up with distinct domains with a common assigned number
     FIDO_edit=FIDO_ini
-    n = 500 # optimization parameter, number of growth steps
-    #counter = np.zeros(n)
+    n = 500 # optimization parameter [number of growth steps]
     for n in np.arange(1,500):
         oldFIDO=FIDO_edit
         FIDO_edit[1:199, 1:199] = np.maximum(FIDO_edit[1:199, 1:199], FIDO_edit[1-1:199-1,1:199]*P[1:199, 1:199,0] ) 
         FIDO_edit[1:199, 1:199] = np.maximum(FIDO_edit[1:199, 1:199], FIDO_edit[1+1:199+1,1:199]*P[1:199, 1:199,1] ) 
         FIDO_edit[1:199, 1:199] = np.maximum(FIDO_edit[1:199, 1:199], FIDO_edit[1:199,1-1:199-1]*P[1:199, 1:199,2] ) 
-        FIDO_edit[1:199, 1:199] = np.maximum(FIDO_edit[1:199, 1:199], FIDO_edit[1:199,1+1:199+1]*P[1:199, 1:199,3] ) 
-        #counter[n] = (np.array_equal(oldFIDO, FIDO_edit) == 0)
-        
+        FIDO_edit[1:199, 1:199] = np.maximum(FIDO_edit[1:199, 1:199], FIDO_edit[1:199,1+1:199+1]*P[1:199, 1:199,3] )     
     
-    FIDO=FIDO_edit    
-    
-    # input is color signals
+    # input is color signals from input image
     WBColor = image_edit.im_cropping(wb, PaddingSize)
     RGColor = image_edit.im_cropping(rg, PaddingSize)
     BYColor = image_edit.im_cropping(by, PaddingSize)
@@ -807,45 +798,28 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
     S_rg = np.zeros((sX, sY))
     S_by = np.zeros((sX, sY)) 
     
-    # Different filling in methods: ref [2] for other options:
+    FIDO_edit = FIDO_edit.astype(int)
+    labels = np.arange(FIDO_edit.max()+1, dtype=int)
+    S_wb = labeled_mean(WBColor, FIDO_edit, labels)[FIDO_edit]
+    S_rg = labeled_mean(RGColor, FIDO_edit, labels)[FIDO_edit]
+    S_by = labeled_mean(BYColor, FIDO_edit, labels)[FIDO_edit] 
     
-    #1
-    #    uniqueFIDOs = np.unique(FIDO)
-    #    numFIDOs = uniqueFIDOs.shape  
-    #    dummyFIDO = np.ones((sX,sY))
-    #    # Number of pixels in this FIDO
-    #    for i in np.arange(0,numFIDOs[0]):
-    #        Lookup=FIDO==uniqueFIDOs[i]
-    #        FIDOsize = np.sum(np.sum(dummyFIDO[Lookup]))
-    #        # Get average of color signals for this FIDO
-    #        S_wb[Lookup] = np.sum(WBColor[Lookup])/FIDOsize
-    #        S_rg[Lookup] = np.sum(RGColor[Lookup])/FIDOsize
-    #        S_by[Lookup] = np.sum(BYColor[Lookup])/FIDOsize
-
-    #2
-    FIDO = FIDO.astype(int)
-    labels = np.arange(FIDO.max()+1, dtype=int)
-    S_wb = labeled_mean(WBColor, FIDO, labels)[FIDO]
-    S_rg = labeled_mean(RGColor, FIDO, labels)[FIDO]
-    S_by = labeled_mean(BYColor, FIDO, labels)[FIDO]
-
     ################### Save image files of network behavior ######################
-    
     # Make boundary animated gif
     orientedImage = np.ones((i_x, i_y,3))  
     step = 1   # can sub-sample image if bigger than 1 
     orientSize = 0
     
     # transform boundary values into intensity signals for viewing image 
-    for i in np.arange(0,i_x,step): # -step SPLINT
-        for j in np.arange(0,i_y,step): # -step SPLINT
+    for i in np.arange(0,i_x,step): 
+        for j in np.arange(0,i_y,step): 
             # if vertical edge at this pixel, color it green
             if O2[i,j,1] >0:
                 ratio = O2[i,j,1]/80
                 if ratio<0.2:
                     ratio = 0.2
-                orientedImage[i, j,2] = 1-ratio # reduce blue -k SPLINT
-                orientedImage[i, j,0] = 1-ratio # reduce red  -k SPLINT
+                orientedImage[i, j,2] = 1-ratio # reduce blue
+                orientedImage[i, j,0] = 1-ratio # reduce red
     
             # if horizontal edge at this pixel, color it blue
             if O2[i,j,0] >0:
@@ -880,7 +854,7 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
     thing[:,2*i_y:3*i_y,2]=temp/255
     
     # Boundaries in center (Boundary Image)
-    thing[:,i_y:2*i_y,:]=orientedImage # +1 removed from y start SPLINT
+    thing[:,i_y:2*i_y,:]=orientedImage
     
     # Write individual frame files (with leading zero if less than 10)
     if timeCount>=10:

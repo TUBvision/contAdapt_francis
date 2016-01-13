@@ -223,20 +223,21 @@ def evaluate(direction):
     if direction == 'h': # horizontal bars
         mask_dark,mask_bright = contours_white_bmmc((2,2),100,1,2,mean_lum=gray/2,contour_width=2,orientation='horizontal')
     elif direction == 'v': # vertical bars
-        mask_dark,mask_bright = contours_white_bmmc((2,2),100,1,2,mean_lum=gray/2,contour_width=2,orientation='vertical')
+        mask_dark,mask_bright = contours_white_bmmc((2,2),100,1,2,mean_lum=gray/2,contour_width=2,orientation='vertical',patch_height =0.62)
     elif direction == 'both': # both directions
-        mask_dark_h,mask_bright_h = contours_white_bmmc((2,2),100,1,2,mean_lum=gray/2,contour_width=2,orientation='horizontal')
-        mask_dark_v,mask_bright_v = contours_white_bmmc((2,2),100,1,2,mean_lum=gray/2,contour_width=2,orientation='vertical')
+        mask_dark_h,mask_bright_h = contours_white_bmmc((2,2),100,1,2,mean_lum=gray/2,contour_width=2,orientation='horizontal',patch_height =0.65)
+        mask_dark_v,mask_bright_v = contours_white_bmmc((2,2),100,1,2,mean_lum=gray/2,contour_width=2,orientation='vertical'  ,patch_height =0.62)
         mask_dark = mask_dark_h + mask_dark_v
         mask_bright = mask_bright_h + mask_bright_v
     
     return stim, mask_dark, mask_bright
-    
+
+#stim,mask_dark_both,mask_bright_both=evaluate('both')
+
+
 #import matplotlib.pyplot as plt
-#fig, (ax1,ax2,ax3) = plt.subplots(ncols=3,figsize=(15,15))
-#ax1.imshow(stim,vmin=np.min(mask_dark),vmax=np.max(mask_bright),cmap= 'gray')
-#ax2.imshow(mask_dark_h,vmin=np.min(mask_dark),vmax=np.max(mask_bright),cmap= 'gray')
-#im=ax3.imshow(mask_bright_h,vmin=np.min(mask_dark),vmax=np.max(mask_bright),cmap= 'gray')
+
+#plt.imshow(stim[50:150,50:150]+mask_bright_both[50:150,50:150],cmap='gray')
 
 # Splint version of colorbar inclusion
 #fig.subplots_adjust(right=0.8)

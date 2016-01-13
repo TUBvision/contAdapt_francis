@@ -1,70 +1,23 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Nov 16 10:57:46 2015
-Translated Python Version of Gregory Francis' contour adaptation
-@author: will
-"""
+Translated Python Version of Gregory Francis' contour adaptation FACADE model (2015)
 
-# From the command line, go to the directory with the images and type
-# convert -quality 100 -dither none -delay 10 -loop 0 All*.png Movie.gif
-
-
-
-
-### Development Notes ###
-"""
-- Array dimension mismatch error - self not properly accessed in each function
-e.g. "LGNcells" cannot currently read wb creation in "createStimulus" function
-
-"""
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-"""
-Translation of Francis (2015)
 -> Extension of Francis and Kim model (2012), where full model description is located.
 --> Extension of FACADE (Form And Color and DEpth) model by Grossbery
 
+Basic usage in CANNEM class, upon code running use below command line script to 
+convert produced images into a gif.
 
 From the commnand line, go to the directory with the images and type
 convert -quality 100 -dither none -delay 10 -loop 0 All*.png Movie.gif
 
-
-
-Roughly subdivided into:
-- Boundary Contour System (boundary edge information)
-    - Orientation sensitive neurons (Complex Cells):
-      Insensitive to direction of contrast polarity.
-    - Gated Dipole Circuit ():
-      Orthogonal orientation sensitive neurons
-      Two signals:
-                  - Inhibitory pathway (Habituation - neurotransmoitter depletion)
-                  - Competiting pathway
-      Habituation (Signal Strength) - reduction in cross channel inhibition results 
-      in unstimulated orthogonal channel rebound activity from stimulated channel.
-             --> the orthogonal activity of removed oriented edge
-- Feature Contour System (diffusion of percepts using BCS data)
-
+To see a overall workflow, go to the evalute function and view the steps inwhich
+the model takes to produce the output i.e. calling each of the specific modules.
 """
 import numpy as np
 import math
 import os
 import scipy
-#import matplotlib.pyplot as plt
 from scipy.ndimage.filters import convolve
 from scipy.ndimage.measurements import mean as labeled_mean
 import whitesillusion as wi
@@ -80,7 +33,7 @@ class CANNEM(object):
     >>> cd "containing Folder"
     >>> import structCAN
     >>> mst=structCAN.CANNEM() # create instance of CANNEM
-    >>> mst.evaluate(0)        # run model
+    >>> mst.evaluate(0)        # run model for stimulus '0'
     
     
     Parameters
@@ -88,7 +41,7 @@ class CANNEM(object):
     makeAnimatedGifs : int, optional
             binary gif making decision [currently not implemented]
     gray : int
-            gray value
+            gray value (127)
     i_x/i_y : int               
             image size   
     K : int                      -
@@ -113,12 +66,16 @@ class CANNEM(object):
     References
     -----------
     [1] Francis, G., & Kim. J. (2012). Simulations of induced visual scene fading with boundary offset and filling-in.
-    Vision Research, 62, 181–191.
+    Vision Research, 62, 181–191
+    [2] http://stackoverflow.com/questions/33612568/speeding-up-for-loop-in-image-analysis-when-iterations-are-up-to-40-000
+    
+    Author
+    ----------
+    William Baker Morrison
     
     """
 
     def __init__(self,
-                 makeAnimatedGifs=0, 
                  gray= 127,                         
                  i_x=200, 
                  i_y=200,
@@ -148,12 +105,17 @@ class CANNEM(object):
                      
                      
     def evaluate(self,condition):
+        """
+        - Kernels are made
+        - Simulation begins in 'time' for loop
+        - Each step described in more detail within themselves        
+        """
         self.LGNkernels(2*np.log(2), 10, .5, .5, 2, 1.75, 0.5)
         print "Simulation condition : ", self.Conditions[condition]
         for time in np.arange(self.startTime, self.stopTime+self.timeStep, self.timeStep):
             self.timeCount= self.timeCount+1
             self.createStimulus(time,5,condition)
-            self.LGNCells()
+            self.LGNcells()
             self.simpleCell()
             self.complexCell(25)
             self.gateComp(time, 20.0, 1.0, 1.0, 0.007)
@@ -188,18 +150,19 @@ class CANNEM(object):
         C/E : array_like
                 Gaussian pulses (excitatory/inhibitory)
         F : array_like
-                Another filter
+                Oriented difference of Gaussian filter (ODOG)
            
         """
-        # avoid floating point error
+        # mathematical avoidance of floating point error
         Gconst= floatingpointtointeger(4,Gconst)
         
-        # excitatory condition
+        # excitatory 2D Gaussian 
         self.C = Gaussian2D([0,0], C_, alpha, Gconst)
         
-        # inhibitory condition
+        # inhibitory 2D Gaussian
         self.E = Gaussian2D([0,0], E_, beta , Gconst)
         
+        # G and H form the kernels which are used to create an ODOG filter
         G = Gaussian2D([0+orientationShift,0+orientationShift], 1, gamma, 2)
         F = np.zeros((G.shape[0],G.shape[1],4))
         self.F=F
@@ -208,6 +171,8 @@ class CANNEM(object):
             m = np.sin((2*np.pi*(k+1))/self.K)
             n = np.cos((2*np.pi*(k+1))/self.K)
             H = Gaussian2D([m+orientationShift,n+orientationShift],1,gamma,2)
+            
+            # minus kernels to create ODOG filter for each polarity
             F[:,:,k] = G - H
             
             # normalize positive and negative parts
@@ -221,6 +186,7 @@ class CANNEM(object):
             negnorm = np.sum(np.sum(negF*negF))
             negF = negF/np.sqrt(negnorm)
             
+            # combine positive and negative parts
             F[:,:,k] = posF + negF
             
             # normalize full kernel
@@ -233,23 +199,20 @@ class CANNEM(object):
         >>> createStimulus(self,time,5,0)
         
 
-        Holds instructions for how various input stimuli are to be built. 
+        Holds instructions for how various input stimuli are to be built, as 
+        well as their counterpart contours for adaptation.
         
         
         Parameters
         ----------        
         condition : int
-                Type labels are: 'Crosses', 'Blob', 'SizeMatch', 'Bipartite', 
+                Integer labels are: 'Crosses', 'Blob', 'SizeMatch', 'Bipartite', 
                 'Pyramids','Annuli', 'Incomplete', 'Robinson-deSa2013', 
-                'Robinson-deSa2012-E1', 'Robinson-deSa2012-E2', 'Prediction'
-        timeStep : int
-                Time step between image slices
-        stopTime : int
-                End of condition
-        startTime : int
-                Start of condition
-        testOnset : int 
-                Point at which adaptors are drawn on
+                'Robinson-deSa2012-E1', 'Robinson-deSa2012-E2', 'Prediction' and
+                'Whites_Illusion'
+        time : float
+                current time of simulation to initiate difference stimuli to be 
+                produced
         testColorChange : int
                 Adaptor color change 5 is typical for A&G conditions 
                 (this is the change, increase or decrease, from the gray background)
@@ -263,7 +226,7 @@ class CANNEM(object):
 
         """        
                      
-        # Special timing settings
+        # Special timing settings for condition 7 & 8 
         if condition==7:  # special settings for R&dS 2013 condition
             self.timeStep = 0.153 # seconds
             self.stopTime = 8.12 # seconds -- 6.12 seconds of adaptation
@@ -280,12 +243,14 @@ class CANNEM(object):
             self.testOnset = self.stopTime-2.0 # seconds
             testColorChange = 8  # 8 is good for demonstration of same size and larger size adaptor  
         
+        
         # change adaptor color with each time step to produce flicker
         self.adaptorColorChange = -self.gray # black
         if np.mod(self.timeCount, 2)== 0:
             self.adaptorColorChange=self.gray
                 
-           
+        
+        # if statements holding stimuli creation instructions
         if condition==0: # Crosses (Adapter size by divisible by 2 & 6)
             self.adaptorSize=42
             self.startInputImage = np.ones((self.i_x, self.i_y))*self.gray  
@@ -701,12 +666,13 @@ class CANNEM(object):
         self.wb=out[2]
         
             
-    def LGNCells(self):
+    def LGNcells(self):
         """
         Usage:
         >>> LGNCells(self)
         
         "white-black center-surround processing (but with current parameters it actually does very little)"
+        Appears to normalize the image, often a step introduced to make edges more easily extractable.
         
         
         Parameters
@@ -720,7 +686,7 @@ class CANNEM(object):
         Returns
         ----------
         LGNwb : array_like
-                The output of LGN cell for white-black color channel of input image [200x200 array]
+                LGN cell processed output for white-black color channel of input image [200x200 array]
         wb,rg,by : array_like
                 Padded color channels of input image [400x400 arrays]
         PaddingSize : int
@@ -731,20 +697,19 @@ class CANNEM(object):
         self.PaddingSize = math.floor(np.max(self.wb.shape)/2) 
         PaddingColor = self.wb[0,0]
         self.wb2 = im_padding(self.wb, self.PaddingSize, PaddingColor)
+        
         # convolution - reflection of each other
         OnOff_Excite =  conv2(self.wb2, self.C, mode='same') 
         OnOff_Inhibit = conv2(self.wb2, self.E, mode='same')
-        OffOn_Excite = OnOff_Inhibit
-        OffOn_Inhibit = OnOff_Excite
         
         # shunting
         paramA = 50 # 1 
         paramB = 90 # 90
         paramD = 60 # 60
-        x_OnOff = (paramB*OnOff_Excite-paramD*OnOff_Inhibit)/(paramA+(OnOff_Excite+OnOff_Inhibit))
-        x_OffOn = (paramB*OffOn_Excite-paramD*OffOn_Inhibit)/(paramA+(OffOn_Excite+OffOn_Inhibit))
         
-        # s
+        # OnOff Excitatory/Inhibitory processing calculation
+        x_OnOff = (paramB*OnOff_Excite-paramD*OnOff_Inhibit)/(paramA+(OnOff_Excite+OnOff_Inhibit))
+        x_OffOn = (paramB*OnOff_Inhibit-paramD*OnOff_Excite)/(paramA+(OnOff_Inhibit+OnOff_Excite))
         x_pos = x_OnOff - x_OffOn
         x_neg = x_OffOn - x_OnOff
         
@@ -752,6 +717,7 @@ class CANNEM(object):
         x_pos[x_pos<0] = 0
         x_neg[x_neg<0] = 0
         
+        # LGN cell out
         self.LGNwb = x_pos - x_neg
         
         # pad planes for all color channels for later use
@@ -770,8 +736,9 @@ class CANNEM(object):
         >>> simpleCell(self)
         
         Theoretical replication of simple cell processing of LGN cell processed image
-        
         "Orientations are only based on inputs from the white-black color channel"
+        Involves convolution, padding and half wave rectification for each polarity,
+        this is essentially the edge detection mechanism of the model.
         
         Parameters
         -----------
@@ -787,7 +754,7 @@ class CANNEM(object):
         Returns
         -----------
         y : array_like
-                simple cell process output image [200x200x4]
+                simple cell processed output image [200x200x4] or boundaries of input
         
         """
         y = np.zeros((self.i_x,self.i_y,self.K))
@@ -807,6 +774,8 @@ class CANNEM(object):
         >>> complexCell(self,25)
         
         Theoretical replication of complex cell processing of simple cell processed image
+        Polarities are summed into two directions (up/down and left/right), boundary limit set,
+        and the tonic input is added to each orientation.
         
         Parameters
         -----------
@@ -851,14 +820,12 @@ class CANNEM(object):
         
         Parameters
         -----------
-        startTime : 
-        
-        A/B/C/Rhogate :
+        time : float
+                current time in the simulation        
+        'A/B/C/Rho'gate :
                 Gating parameters
         w1 :
                 Output of complex cell
-        inI :
-                tonic input
         
         Returns
         -----------
@@ -866,22 +833,16 @@ class CANNEM(object):
                 image of the gating structure [200x200x2]
         
         
-        """
-         
+        """   
         
         # initialize gate on first time step
         if time==self.startTime :
             self.gate = Agate/(Bgate + Cgate*self.inI) * np.ones(self.w1.shape)
-
-        
                 
         # identifsy equilibrium solution to gate
         gate_equil = Agate/(Bgate + Cgate* self.w1)
         
-        # solve gate for current time
-#       if self.gate == None:
-#           self.gate = 0
-        
+        # habituating gate solution
         self.gate = gate_equil + (self.gate - gate_equil)* np.exp(-Rhogate*(Bgate+Cgate*self.w1)*self.timeStep)
             
     def dipoleComp(self):
@@ -909,13 +870,11 @@ class CANNEM(object):
                 processed output prior to filling in stage
         
         """
-        gdAcrossWeight = 0.5 
-        orthgonalK1 = 1 
-        orthgonalK2 = 0
-        
-        # orthogonal inhibition
-        v_1 = self.gate[:,:,0]*self.w1[:,:,0] - gdAcrossWeight*self.gate[:,:,orthgonalK1]*self.w1[:,:,orthgonalK1] 
-        v_2 = self.gate[:,:,1]*self.w1[:,:,1] - gdAcrossWeight*self.gate[:,:,orthgonalK2]*self.w1[:,:,orthgonalK2] 
+        gdAcrossWeight = 0.5 # cross orientation weighting
+                
+        # gating applied to boundary signal and orthogonal orientation inhibition applied
+        v_1 = self.gate[:,:,0]*self.w1[:,:,0] - gdAcrossWeight*self.gate[:,:,1]*self.w1[:,:,1] 
+        v_2 = self.gate[:,:,1]*self.w1[:,:,1] - gdAcrossWeight*self.gate[:,:,0]*self.w1[:,:,0] 
         
         # half-wave rectify
         v_1[v_1<0] = 0  
@@ -971,22 +930,16 @@ class CANNEM(object):
          
         # boundary signals
         # Most of this code is an algorithmic way of identifying distinct Filling-In DOmains (FIDOs)
-        BndSig = np.sum(self.O2[:,:,:],2) 
+        BndSig = np.sum(self.O2[:,:,:],2)
         thint = self.O2.shape
-        BndThr = 0.0
-        BndSig = 100*(BndSig - BndThr)
+        BndSig = 100*BndSig
         BndSig[BndSig < 0] = 0
-        
-        boundaryOrientation = np.zeros((1,self.nOrient))
-        for i in np.arange(0,self.nOrient):
-            boundaryOrientation[0,i] = -np.pi/2 +(i+1)*np.pi/(self.nOrient)
         
         sX = np.size(BndSig, 0)
         sY = np.size(BndSig, 1)
         
         stimarea_x = np.arange(1,np.size(BndSig, 0)-1) 
         stimarea_y = np.arange(1,np.size(BndSig, 1)-1)
-        
         
         # Setting up boundary structures
         P=np.zeros((sX,sY,4))
@@ -1002,10 +955,10 @@ class CANNEM(object):
             currentBoundary2 = np.zeros((BndSig.shape[0],BndSig.shape[1]))
             
             # for both orientations at each polarity
-            a1=np.abs(np.sin(shiftOrientation[i] - boundaryOrientation[0,0]))
+            a1=np.abs(np.sin(shiftOrientation[i] - 0))
             currentBoundary1[stimarea_x[0]:stimarea_x[-1]+1:1, stimarea_y[0]:stimarea_y[-1]+1:1] = a1*(self.O2[p1[0]:p1[-1]+1:1,q1[0]:q1[-1]+1:1,0] + self.O2[p2[0]:p2[-1]+1:1,q2[0]:q2[-1]+1:1,0] )
             
-            a2=np.abs(np.sin(shiftOrientation[i] - boundaryOrientation[0,1]))
+            a2=np.abs(np.sin(shiftOrientation[i] - np.pi/2))
             currentBoundary2[stimarea_x[0]:stimarea_x[-1]+1:1, stimarea_y[0]:stimarea_y[-1]+1:1] = a2*(self.O2[p1[0]:p1[-1]+1:1,q1[0]:q1[-1]+1:1,1] + self.O2[p2[0]:p2[-1]+1:1,q2[0]:q2[-1]+1:1,1] )
             
             currentBoundary=currentBoundary1+currentBoundary2
