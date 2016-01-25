@@ -35,6 +35,14 @@ class CANNEM(object):
     >>> mst=structCAN.CANNEM() # create instance of CANNEM
     >>> mst.evaluate(0)        # run model for stimulus '0'
     
+    Note:
+    If choosing White's Illusion, i.e. stimuli 11, you have the option of specifying
+    orientation of adapters and height of test patches
+    
+    patch_h=1   ,direction='v'    # Default vertical e.g.
+    patch_h=0.25,direction='h'    # Square  square   e.g.
+    
+    >>> mst.evaluate(11,patch_h=0.25,direction='h')
     
     Parameters
     ----------
@@ -104,12 +112,14 @@ class CANNEM(object):
                      self.timeCount=0
                      
                      
-    def evaluate(self,condition):
+    def evaluate(self,condition,patch_h=1,direction='v'):
         """
         - Kernels are made
         - Simulation begins in 'time' for loop
         - Each step described in more detail within themselves        
         """
+        self.patch_h = patch_h
+        self.direction = direction
         self.LGNkernels(2*np.log(2), 10, .5, .5, 2, 1.75, 0.5)
         print "Simulation condition : ", self.Conditions[condition]
         for time in np.arange(self.startTime, self.stopTime+self.timeStep, self.timeStep):
@@ -639,7 +649,7 @@ class CANNEM(object):
         
         if condition == 11: #Whites illusion
             self.startInputImage = np.ones((self.i_x, self.i_y))*self.gray
-            stim, mask_dark, mask_bright = wi.evaluate()
+            stim, mask_dark, mask_bright = wi.evaluate(self.patch_h,self.direction)
             if time< self.testOnset: # Show adaptors (mask)
                 if self.adaptorColorChange == self.gray:
                     self.startInputImage= mask_bright

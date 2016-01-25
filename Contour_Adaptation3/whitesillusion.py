@@ -216,29 +216,33 @@ def contours_white_bmmc(shape, ppd, contrast, frequency, mean_lum=.5,
     mask_dark[idx_mask] = dark
     mask_bright[idx_mask] = bright
     return (mask_dark, mask_bright)
-    
-def evaluate(direction):
+
+
+
+def evaluate(patch_h,direction):
     gray=127
-    stim = whites_illusion_bmcc((2,2),100,0.2,2)*255
+    #contrast_f = 5/245 # contrast differences used by g.francis model dark/light
+    contrast_f = 0.05 # torsten contrast
+    stim = whites_illusion_bmcc((2,2),100,contrast_f,2,patch_height=patch_h)*255
     if direction == 'h': # horizontal bars
-        mask_dark,mask_bright = contours_white_bmmc((2,2),100,1,2,mean_lum=gray/2,contour_width=2,orientation='horizontal')
+        mask_dark,mask_bright = contours_white_bmmc((2,2),100,1,2,mean_lum=gray/2,contour_width=2,patch_height=patch_h,orientation='horizontal')
     elif direction == 'v': # vertical bars
-        mask_dark,mask_bright = contours_white_bmmc((2,2),100,1,2,mean_lum=gray/2,contour_width=2,orientation='vertical',patch_height =0.62)
+        mask_dark,mask_bright = contours_white_bmmc((2,2),100,1,2,mean_lum=gray/2,contour_width=2,patch_height=patch_h,orientation='vertical')
     elif direction == 'both': # both directions
-        mask_dark_h,mask_bright_h = contours_white_bmmc((2,2),100,1,2,mean_lum=gray/2,contour_width=2,orientation='horizontal',patch_height =0.65)
-        mask_dark_v,mask_bright_v = contours_white_bmmc((2,2),100,1,2,mean_lum=gray/2,contour_width=2,orientation='vertical'  ,patch_height =0.62)
+        mask_dark_h,mask_bright_h = contours_white_bmmc((2,2),100,1,2,mean_lum=gray/2,contour_width=2,patch_height=patch_h,orientation='horizontal')
+        mask_dark_v,mask_bright_v = contours_white_bmmc((2,2),100,1,2,mean_lum=gray/2,contour_width=2,patch_height=patch_h,orientation='vertical')
         mask_dark = mask_dark_h + mask_dark_v
         mask_bright = mask_bright_h + mask_bright_v
     
     return stim, mask_dark, mask_bright
 
-#stim,mask_dark_both,mask_bright_both=evaluate('both')
 
 
+#stim,mask_dark_both,mask_bright_both=evaluate(0.25,'h')
+#
 #import matplotlib.pyplot as plt
-
-#plt.imshow(stim[50:150,50:150]+mask_bright_both[50:150,50:150],cmap='gray')
-
+#plt.imshow(stim,cmap='gray')
+#plt.imshow(mask_bright_both+stim,cmap='gray')
 # Splint version of colorbar inclusion
 #fig.subplots_adjust(right=0.8)
 #cbar_ax = fig.add_axes([0.82, 0.412, 0.05, 0.2])
