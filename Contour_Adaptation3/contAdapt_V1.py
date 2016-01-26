@@ -48,11 +48,13 @@ References
     
 """
 
-condition = 0
-direction = 'v' # direction of adapting bars in condition 11 - Whites Illusion
-
+condition = 11
+stopTime = 6
+# Whites Illusion Conditions
+direction = 'h' # direction of adapting bars in condition 11 - Whites Illusion
+patch_h = 0.25 #0.25 for square, 1 for rectangular test patches in Whites Illusion
 # [ Frequency (cpd), Noisemask size, ppd]
-noise = [0,512,31] # Options: [0.11,0.19,0.33,0.58,1.00,1.73,3.00,5.20,9.00] (0 if none) 
+noise = [0.19, 512,31] # Options: [0.11,0.19,0.33,0.58,1.00,1.73,3.00,5.20,9.00] (0 if none) 
 
 # Parameters
 gray = 127
@@ -145,7 +147,7 @@ if os.path.exists(resultsDirectory)==0:
 
 # Set timing Parameters (seconds)
 timeStep = 0.1 # Originally 0.1 seconds (Changed for speed)
-stopTime = 6 # seconds 6 for A&G conditions - makes for 4 second adaptation
+ # seconds 6 for A&G conditions - makes for 4 second adaptation, 8 seconds for WI
 startTime = timeStep
 testOnset = stopTime-2.0
 
@@ -570,12 +572,12 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
     
     if condition ==11: #Whites illusion
         startinputImage = np.ones((i_x, i_y))*gray
-        stim, mask_dark, mask_bright = wi.evaluate(direction) # 'h'orizontal, 'v'ertical or 'both' bars
+        stim, mask_dark, mask_bright = wi.evaluate(patch_h,direction) # 'h'orizontal, 'v'ertical or 'both' bars
         if time< testOnset: # Show adaptors (mask)
             if adaptorColorChange == gray:
-                startinputImage= mask_bright
+                startinputImage= mask_bright*2
             else:
-                startinputImage= mask_dark
+                startinputImage= mask_dark*2
         else: # Show test stimuli
             startinputImage = stim
         
@@ -591,10 +593,11 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
     startinputImage[i_x/2-2,i_y/2]=0
     startinputImage[i_x/2,i_y/2-2]=0
     
+    startInputcomparison=startinputImage
     # Add noise
     if noise[0] > 0:
         mask1=np.load("{0}{1}{2}{3}{4}{5}{6}".format('/home/will/Documents/noisemasks/noise',noise[1],'_',noise[2],'ppd_',noise[0],'_5.npy'))
-        startinputImage=mask1[0:200,0:200]*startinputImage    
+        startinputImage=(mask1[0:200,0:200]*255)+startinputImage    
     
     # Convert RGB input image to red-green, blue-yellow, white-black coordinates
     inputImage = np.zeros((i_x, i_y, 3))
@@ -754,11 +757,11 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
         currentBoundary1 = np.zeros((BndSig.shape[0],BndSig.shape[1]))
         currentBoundary2 = np.zeros((BndSig.shape[0],BndSig.shape[1]))
         
-        # for both orientations at each polarity
-        a1=np.abs(np.sin(shiftOrientation[i]))
+        # for both orientations, at each polarity
+        a1=np.abs(np.sin(shiftOrientation[i])) # polarity weighting
         currentBoundary1[stimarea_x[0]:stimarea_x[-1]+1:1, stimarea_y[0]:stimarea_y[-1]+1:1] = a1*(O2[p1[0]:p1[-1]+1:1,q1[0]:q1[-1]+1:1,0] + O2[p2[0]:p2[-1]+1:1,q2[0]:q2[-1]+1:1,0] )
         
-        a2=np.abs(np.sin(shiftOrientation[i] - np.pi/2))
+        a2=np.abs(np.sin(shiftOrientation[i] - np.pi/2)) # polarity weighting
         currentBoundary2[stimarea_x[0]:stimarea_x[-1]+1:1, stimarea_y[0]:stimarea_y[-1]+1:1] = a2*(O2[p1[0]:p1[-1]+1:1,q1[0]:q1[-1]+1:1,1] + O2[p2[0]:p2[-1]+1:1,q2[0]:q2[-1]+1:1,1] )
         
         # combine orientations
@@ -772,13 +775,13 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
     # find FIDOs and average within them
     FIDO_ini = np.zeros((sX, sY))
     oldFIDO = np.zeros((sX, sY))
-    
     # unique number for each cell in the FIDO
     for i in np.arange(0,sX):
         for j in np.arange(0,sY):
             FIDO_ini[i,j] = (i+1)+ (j+1)*thint[0]  
     
-    # Grow each FIDO so end up with distinct domains with a common assigned number
+    # Grow each FIDO so to end up with distinct domains with a common assigned number
+    # this allows for later summing of regions with common number
     FIDO_edit=FIDO_ini
     n = 500 # optimization parameter [number of growth steps]
     for n in np.arange(1,500):
@@ -849,9 +852,14 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
     thing[:,0:i_y,:]=inputImage/255
     
     # Filled-in values on right (Computer Image)
-    thing[:,2*i_y:3*i_y,0]=temp/255 
-    thing[:,2*i_y:3*i_y,1]=temp/255  
-    thing[:,2*i_y:3*i_y,2]=temp/255
+    if noise[0]>0:
+        thing[:,2*i_y:3*i_y,0]=(temp-(mask1[0:200,0:200]*255))/255
+        thing[:,2*i_y:3*i_y,1]=(temp-(mask1[0:200,0:200]*255))/255  
+        thing[:,2*i_y:3*i_y,2]=(temp-(mask1[0:200,0:200]*255))/255
+    else:
+        thing[:,2*i_y:3*i_y,0]=temp/255 
+        thing[:,2*i_y:3*i_y,1]=temp/255  
+        thing[:,2*i_y:3*i_y,2]=temp/255
     
     # Boundaries in center (Boundary Image)
     thing[:,i_y:2*i_y,:]=orientedImage
