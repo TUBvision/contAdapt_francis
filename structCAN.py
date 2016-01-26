@@ -130,7 +130,7 @@ class CANNEM(object):
             self.complexCell(25)
             self.gateComp(time, 20.0, 1.0, 1.0, 0.007)
             self.dipoleComp()
-            self.fillingFIDO()
+            self.fillingin()
             self.saveImages(condition)
                          
     def LGNkernels(self,Gconst, C_,E_, alpha,beta,gamma,orientationShift):
@@ -900,10 +900,10 @@ class CANNEM(object):
         self.O2[self.O2<0] = 0   
         
     
-    def fillingFIDO(self):
+    def fillingin(self):
         """
         Usage: 
-        >>> fillingFIDO(self)
+        >>> fillingin(self)
         
         FIDO - regions of connected boundary points    
         "Most of this code is an algorithmic way of identifying distinct Filling-In DOmains (FIDOs)"
