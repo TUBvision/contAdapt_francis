@@ -11,7 +11,7 @@ import scipy
 import image_edit # Side functions
 from scipy.ndimage.measurements import mean as labeled_mean
 import whitesillusion as wi
-import multiprocessing as mp
+
 """
 Development version of "structCAN"
 
@@ -48,13 +48,13 @@ References
     
 """
 
-condition = 11
-stopTime = 6
+condition = 11 
+stopTime = 8
 # Whites Illusion Conditions
-direction = 'h' # direction of adapting bars in condition 11 - Whites Illusion
-patch_h = 0.25 #0.25 for square, 1 for rectangular test patches in Whites Illusion
+direction = 'both' # direction of adapting bars in condition 11 - Whites Illusion
+patch_h = 1 #0.25 for square, 1 for rectangular test patches in Whites Illusion
 # [ Frequency (cpd), Noisemask size, ppd]
-noise = [0.19, 512,31] # Options: [0.11,0.19,0.33,0.58,1.00,1.73,3.00,5.20,9.00] (0 if none) 
+noise = [0, 512,31] # Options: [0.11,0.19,0.33,0.58,1.00,1.73,3.00,5.20,9.00] (0 if none) 
 
 # Parameters
 gray = 127
@@ -634,6 +634,7 @@ for t in np.arange(startTime,stopTime+timeStep,timeStep):
     x_pos[x_pos<0] = 0
     x_neg = x_OffOn - x_OnOff
     x_neg[x_neg<0] = 0
+    #wb2=wb2*3
     LGNwb = x_pos - x_neg
     
     # pad planes for all color channels for later use

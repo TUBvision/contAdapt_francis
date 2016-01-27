@@ -5,6 +5,10 @@ Created on Thu Jan  7 09:32:30 2016
 @author: will
 
 Create White's Stimulus
+
+Taken from Torstens code and restructured for this application.
+Only real addition is evaluate tool which controls the other premade functions.
+https://github.com/TUBvision/betz2015_contour
 """
 import numpy as np
 
@@ -229,20 +233,26 @@ def evaluate(patch_h,direction):
     elif direction == 'v': # vertical bars
         mask_dark,mask_bright = contours_white_bmmc((2,2),100,1,2,mean_lum=gray/2,contour_width=2,patch_height=patch_h,orientation='vertical')
     elif direction == 'both': # both directions
-        mask_dark_h,mask_bright_h = contours_white_bmmc((2,2),100,1,2,mean_lum=gray/2,contour_width=2,patch_height=patch_h,orientation='horizontal')
-        mask_dark_v,mask_bright_v = contours_white_bmmc((2,2),100,1,2,mean_lum=gray/2,contour_width=2,patch_height=patch_h,orientation='vertical')
+        mask_dark_h,mask_bright_h = contours_white_bmmc((2,2),100,1,2,mean_lum=gray/4,contour_width=2,patch_height=patch_h,orientation='horizontal')
+        mask_dark_v,mask_bright_v = contours_white_bmmc((2,2),100,1,2,mean_lum=gray/4,contour_width=2,patch_height=patch_h,orientation='vertical')
         mask_dark = mask_dark_h + mask_dark_v
         mask_bright = mask_bright_h + mask_bright_v
     
     return stim, mask_dark, mask_bright
 
 
+####### Testing Code for Printing Output for different cases #######
 
-#stim,mask_dark_both,mask_bright_both=evaluate(0.25,'h')
+#stim,mask_dark_both,mask_bright_both=evaluate(0.25,'both')
+#stim,mask_dark_v,mask_bright_v=evaluate(0.25,'v')
 #
 #import matplotlib.pyplot as plt
-#plt.imshow(stim,cmap='gray')
-#plt.imshow(mask_bright_both+stim,cmap='gray')
+##plt.imshow(stim,cmap='gray')
+#fig, (ax1,ax2,ax3,ax4) = plt.subplots(ncols=4, figsize=(10,10))
+#ax1.imshow(mask_bright_both,cmap='gray')
+#ax2.imshow(mask_dark_both,cmap='gray')
+#ax3.imshow(mask_bright_v,cmap='gray')
+#ax4.imshow(mask_dark_v,cmap='gray')
 # Splint version of colorbar inclusion
 #fig.subplots_adjust(right=0.8)
 #cbar_ax = fig.add_axes([0.82, 0.412, 0.05, 0.2])

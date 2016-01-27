@@ -43,6 +43,13 @@ class CANNEM(object):
     patch_h=0.25,direction='h'    # Square  square   e.g.
     
     >>> mst.evaluate(11,patch_h=0.25,direction='h')
+
+    To plot variables, after initializing the stimuli condition use e.g.:
+    
+    import matplotlib.pyplot as plt
+    fig, (ax1,ax2) = plt.subplots(ncols=2, figsize=(10,10))
+    ax1.imshow(mst.FIDO_edit[:,:,0])
+    ax2.imshow(mst.FIDO_edit[:,:,1])
     
     Parameters
     ----------
@@ -118,6 +125,7 @@ class CANNEM(object):
         - Simulation begins in 'time' for loop
         - Each step described in more detail within themselves        
         """
+        self.condition = condition        
         self.patch_h = patch_h
         self.direction = direction
         self.LGNkernels(2*np.log(2), 10, .5, .5, 2, 1.75, 0.5)

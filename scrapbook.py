@@ -65,7 +65,21 @@ while (oldFIDO==FIDO).all() == 0: # while arrays not equal
         p = stimarea_x + shift[i,0]
         q = stimarea_y + shift[i,1]
         FIDO[1:199,1:199] = np.maximum(FIDO[1:199, 1:199], FIDO[p[0]:p[-1]+1:1,q[0]:q[-1]+1:1]*P_cur[1:199,1:199])
-    
+######################################################################
+#Plot 1D of various stages in the processing
+C_line=F[11,:,1]
+plt.pyplot.plot(scipy.fft(C_line))
+pylab.savefig('O2lr.png')
+
+filename3 = "{0}/{1}".format(resultsDirectory,'WBColor.png')
+scipy.misc.imsave(filename3,WBColor)
+
+pylab.savefig('WIcross.png')
+######################################################################
+#Load noise masks
+
+mask1=np.load('/home/will/Documents/noisemasks/noise390_31ppd_1.00_5.npy')
+
 ###################################  
 sX=sY=200
 # find FIDOs and average within them
@@ -87,6 +101,26 @@ FIDO_edit[1:199, 1:199] = np.maximum(FIDO_edit[1:199, 1:199], FIDO_edit[1:199,1+
 # SAVE Image
 filename3 = "{0}/{1}{2}{3}".format(resultsDirectory,'FIDO_edit',timeCount,'.png')
 scipy.misc.imsave(filename3,FIDO_edit)
+
+################################################################
+#ranges inside input & output images
+import matplotlib.pyplot as plt
+templong=np.reshape(temp,temp.shape[0]*temp.shape[1])
+inputlong=np.reshape(startinputImage,startinputImage.shape[0]*startinputImage.shape[1])
+changelong=np.reshape(startinputImage-temp,startinputImage.shape[0]*startinputImage.shape[1])
+
+fig, (ax1,ax2,ax3) = plt.subplots(ncols=3, figsize=(10,5))
+ax1.hist(inputlong/255,bins=100)
+ax1.set_xlim(0.45,0.55)
+#ax1.set_ylim(0,1000)
+ax2.hist(templong/255,bins=100)
+ax2.set_xlim(0.45,0.55)
+#ax2.set_ylim(0,1000)
+ax3.hist((inputlong-templong)/255,bins=100)
+ax3.set_xlim(-6,6)
+
+plt.hist(changelong)
+
 ################################################################
 # multiple processing
 
@@ -122,20 +156,40 @@ def multi_conv2(A):
 p = Process(target=multi_conv2, args=(C,E,))
 p.start()
 p.join()
+##############################################################
+#Png images to gif
+
+import os
+Gif_name = "{0}{1}{2}".format(mst.condition,'_','YOURLABELHERE')
+os.system("{0}{1}{2}".format('convert -quality 100 -dither none -delay 10 -loop 0 All*.png ',Gif_name ,'.gif'))
 
 ##############################################################
+# Plotting scrap
 import matplotlib.pyplot as plt
 fig, (ax1,ax2) = plt.subplots(ncols=2, figsize=(10,10))
 ax1.imshow(FIDO_edit[:,:,0])
 
-
 fig, (ax1) = plt.subplots(ncols=1, figsize=(10,10))
 ax1.imshow(FIDO4-FIDO42)
 
-fig, (ax1,ax2,ax3) = plt.subplots(ncols=3, figsize=(10,10))
-ax1.imshow(oldFIDO-FIDO32)
-ax2.imshow(P[:,:,0])
-ax3.imshow(P2[:,:,0])
+fig, (ax1,ax2) = plt.subplots(nrows=2, figsize=(10,10))
+ax1.imshow(O2[:,:,0])
+ax2.imshow(O2[:,:,1])
+#ax3.imshow(y[:,:,2])
+#ax4.imshow(y[:,:,3])
+
+fig, (ax1) = plt.subplots(ncols=1, figsize=(10,10))
+ax1.plot(O2[103,:,1],'r')
+ax2.plot(y[103,:,1])
+ax3.plot(y[:,103,2])
+ax4.plot(y[103,:,3])
+ax1.set_ylim(-1,1)
+ax2.set_ylim(-1,1)
+ax3.set_ylim(-0.1,0.1)
+#ax1.set_title('OnOff')
+ax1.set_title('LGNwb')
+#ax3.set_title('Original')
+
 #ax3.imshow(FIDO22-oldFIDO)
 #ax4.imshow(P[:,:,1])
 #ax5.imshow(FIDO32-oldFIDO)
@@ -173,9 +227,6 @@ ax2.imshow(temp2)
 #ax7.imshow(y[:,:,2])
 #ax8.imshow(y[:,:,3])
 #####################################################################
-SizeHalf=2
-[a,b]=np.meshgrid(np.arange(-SizeHalf,SizeHalf+1), np.arange(-SizeHalf,SizeHalf+1))
-#######################################
 # Convolution method comparison
 from scipy import signal
 ypos24=np.abs(signal.convolve(LGNwb2,F2[:,:,0],mode='same'))
@@ -183,35 +234,13 @@ ypos2=np.abs(scipy.ndimage.convolve(LGNwb2,F2[:,:,0]))
 ypos23=np.abs(image_edit.conv2(LGNwb2, F2[:,:,0], mode='same'))
 
 
-
 #####################################################################
 # Remove start column and row, add to end, shift matching to Matlab indexing
 store = np.vstack((startinputImage[1::,:],startinputImage[0,:]))
 startinputImage = np.vstack((store[:,1::].T,store[:,0])).T
+
 #####################################################################
-# mess code
-import matplotlib.pyplot as plt
-
-
-#Plotting types
-fig, (ax1) = plt.subplots(nrows=1, figsize=(6,10))
-ax1.imshow(x_neg)
-plt.show()
-
-
-fig, (ax1,ax2,ax3,ax4,ax5,ax6) = plt.subplots(nrows=6, figsize=(6,10))
-ax1.imshow(S_rgb[:,:,0])
-ax2.imshow(S_rgb2[:,:,0])
-ax3.imshow(S_rgb[:,:,1])
-ax4.imshow(S_rgb2[:,:,1])
-ax5.imshow(S_rgb[:,:,2])
-ax6.imshow(S_rgb2[:,:,2])
-plt.show()
-
-
-############################################################################
-""" COMPARE DIFFERENT METHODS' TRUTH """
-
+# COMPARE DIFFERENT METHODS' TRUTH 
 
 S_wb1 = np.zeros((sX, sY))
 S_rg1 = np.zeros((sX, sY))
@@ -227,8 +256,6 @@ for i in np.arange(0,numFIDOs[0]):
     BYSum = np.sum(np.sum(BYColor[FIDO==uniqueFIDOs[i]]))
     S_by1[FIDO==uniqueFIDOs[i]] = BYSum/FIDOsize
 
-
-
 S_wb2 = np.zeros((sX, sY))
 S_rg2 = np.zeros((sX, sY))
 S_by2 = np.zeros((sX, sY)) 
@@ -236,10 +263,8 @@ S_wb2=WBColor
 S_rg2=RGColor
 S_by2=BYColor
 
-
-
-
 ###########################################################################
+# FILLIN IN METHOD COMPARISONS
 
  # Compute average color for unique FIDOs
 uniqueFIDOs = np.unique(FIDO)
@@ -269,8 +294,7 @@ S_rg[FIDO==uniqueFIDOs[0:numFIDOs[0]:1]] = RGSum/FIDOsize
 BYSum = np.sum(np.sum(BYColor[FIDO==uniqueFIDOs[0:numFIDOs[0]:1]]))
 S_by[FIDO==uniqueFIDOs[0:numFIDOs[0]:1]] = BYSum/FIDOsize
     
-
-##################################################################
+##################################
 # Compute average color for unique FIDOs
 
 S_wb2 = np.zeros((sX, sY))
@@ -299,8 +323,7 @@ S_wb[0:numFIDOs[0]:1] = np.sum(WBColor[Lookup])/FIDOsize
 S_rg[0:numFIDOs[0]:1] = np.sum(RGColor[Lookup])/FIDOsize
 S_by[0:numFIDOs[0]:1] = np.sum(BYColor[Lookup])/FIDOsize
 
-###############################################################################
-""" Option to make loop run faster"""
+##################################
 
 import collections
 start=time.clock()
