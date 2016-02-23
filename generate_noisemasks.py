@@ -46,6 +46,7 @@ def narrowband_noise(freq, mask_size=512, ppd=31.277, noiseRms=0.2, max_noise=0.
     # Create random noise mask
     max_val = 2
     min_val = -2
+    
     # Create noisemask until the extreme values are within desired range
     while max_val > max_noise or min_val < min_noise:
         s = GenSpec2(nn)
@@ -128,8 +129,8 @@ def GenSpec2(n):
     Im = Im*random.choice((-1,1))	
     row = Re+Im*1j
     apu = np.fliplr(row)
-    row[n/2+2:n] = np.conj(apu[n/2+1:n-1]) 
-    spectrum[1,:] = row
+    row[n/2+1:n] = np.conj(apu[n/2:n-1]) 
+    spectrum[0,:] = row
     
     # kŠsitellŠŠn f1=0
     Re = np.random.rand(1,n)*Amp-HalfAmp
@@ -137,8 +138,8 @@ def GenSpec2(n):
     Im = Im*random.choice((-1,1))	
     row = Re+Im*1j
     apu = np.fliplr(row)
-    row[n/2+2:n] = np.conj(apu[n/2+1:n-1])
-    spectrum[n/2+1,:]= row
+    row[n/2+1:n] = np.conj(apu[n/2:n-1])
+    spectrum[n/2,:]= row
     
     # kŠsitellŠŠn f2=0
     Re = np.random.rand(n,1)*Amp-HalfAmp
@@ -147,7 +148,7 @@ def GenSpec2(n):
     column = Re+Im*1j
     apu = np.flipud(column)
     column[n/2+1:n] = np.conj(apu[n/2:n-1])
-    spectrum[:,n/2+1] = column.squeeze()
+    spectrum[:,n/2] = column.squeeze()
     
     # kŠsitellŠŠn f2=±n/2
     Re = np.random.rand(n,1)*Amp-HalfAmp
@@ -164,10 +165,10 @@ def GenSpec2(n):
     # f1=0,f2=±n/2 
     # fi=0,f2=0
     	
-    spectrum[1,1]         = -HalfAmp+0*1j
-    spectrum[1,n/2+1]     = -HalfAmp+0*1j
-    spectrum[n/2+1,1]     = -HalfAmp+0*1j
-    spectrum[n/2+1,n/2+1] = 0+0*1j
+    spectrum[0,0]       = -HalfAmp+0*1j
+    spectrum[0,n/2]     = -HalfAmp+0*1j
+    spectrum[n/2,0]     = -HalfAmp+0*1j
+    spectrum[n/2,n/2]   = 0+0*1j
     	
     return spectrum
 
@@ -290,12 +291,14 @@ def FreqFilt(n,low,high,IG,PR,EO,OnOff):
     return filter_out
     
 
+# Originally called generate_noisemasks.m - Ref: Torsten Betz
 """ 
 generate 25 noise masks at all frequencies for model testing. only first 5
 are required for psychophysical experiment.
 
 """
 rang = np.arange(-np.log2(9),np.log2(9),np.log2(9)/4)
+rang = np.round(2**(rang)*100)/100
 #for noise_freq in np.round(2**(rang)*100)/100 :
 noise_freq = rang[2]
 if noise_freq > 2:
@@ -307,9 +310,55 @@ else:
 
 ppd = 31.2770941620795
 mask_size = 512
-        
+ 
+      
 k = 2 #in range(25):
 noise = narrowband_noise(noise_freq, mask_size, ppd, .2, noise_max, noise_min)
 sc.save("..\noise\noise%i_%.3fppd_%.3f_%.3f.mat" % ( mask_size, ppd, noise_freq, k), 'noise')
 
+"""
+freq=noise_freq
+mask_size=512
+ppd=31.277
+noiseRms=0.2
+max_noise=0.4
+min_noise=-0.4
+    
+   
+# noisemask parameters
+frequency = 2./3. * freq / ppd * mask_size # low cut off spatial frequency in cycles/image width (sf bandwidth is 1 oct) (image width = noise mask)
 
+nn = 2**np.ceil(np.log2(mask_size))
+
+# Create noise mask
+f = FreqFilt(nn,frequency,frequency*2,'G','P','E','+')
+
+const = noiseRms*nn**2/(np.sqrt(np.sum(f**2)))
+
+# Create random noise mask
+max_val = 2
+min_val = -2
+
+values_min = [0]
+values_max = [0]
+# Create noisemask until the extreme values are within desired range
+while max_val > max_noise or min_val < min_noise:
+    s = GenSpec2(nn)
+    sf = s*f*const
+    fsf = np.fft.fftshift(sf)
+    Y = np.fft.ifft2(fsf)
+    noisemask = np.real(Y)
+    # we need to divide the noise mask by two to achieve the same contrast
+    # level that Salmela and Laurinen call RMS contrast, because their RMS
+    # contrast is normalized by mean luminance, which is 0.5
+    noisemask = noisemask / 2
+    if nn != mask_size:
+        noisemask = noisemask[0:mask_size, 0:mask_size]
+    
+    max_val = np.max(noisemask)
+    min_val = np.min(noisemask)
+    
+    values_min.append(min_val)
+    values_max.append(max_val)
+
+"""
