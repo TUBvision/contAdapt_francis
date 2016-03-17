@@ -221,12 +221,12 @@ def FreqFilt(n,low,high,IG,PR,EO,OnOff):
     		
     # Calculate u-frequency
     u = np.zeros((n,n))
-    for j in np.arange(1,n):
+    for j in np.arange(0,n):
         u[j,:] = np.ones((1,n))*(j-n/2-1)
     	
     # Calculate v-frequency
     v = np.zeros((n,n))
-    for j in np.arange(1,n):
+    for j in np.arange(0,n):
         v[:,j] = (np.ones((n,1))*(j-n/2-1)).squeeze()
     
     # Calculate 2D spatial frequency
@@ -256,12 +256,12 @@ def FreqFilt(n,low,high,IG,PR,EO,OnOff):
         filter_out[k] = (filter_out[k])**(1/2)
     
     # correct the conjugates in row 1: f1=±n/2	(f1+ is the correct one)
-    CorrectRow = filter_out[1,n/2+2:n]
-    filter_out[1,2:n/2] = list(reversed(CorrectRow))
+    CorrectRow = filter_out[0,n/2+1:n]
+    filter_out[0,1:n/2] = list(reversed(CorrectRow))
     
     # correct the conjugates in column 1: f2=±n/2 (f2+ is the correct one)	
-    CorrectCol = filter_out[n/2+2:n,1]
-    filter_out[2:n/2,1] = list(reversed(CorrectCol))
+    CorrectCol = filter_out[n/2+1:n,0]
+    filter_out[1:n/2,0] = list(reversed(CorrectCol))
     	
     # If the filter is REJECT, revert the values
     if (PR=='R'):
@@ -271,16 +271,16 @@ def FreqFilt(n,low,high,IG,PR,EO,OnOff):
     if EO == 'O':
     		RealPart = np.zeros((n,n))
     		ImagPart = filter_out
-    		ImagPart[2:n/2,2:n/2] = -1*(ImagPart[2:n/2,2:n/2])			# quadrant: left, top
-    		ImagPart[n/2+2:n,2:n/2] = -1*(ImagPart[n/2+2:n,2:n/2])		# quadrant: left, bottom
-    		ImagPart[1,2:n/2] = -1*(ImagPart[1,2:n/2])    			# row 1
-    		ImagPart[n/2+1,2:n/2] = -1*(ImagPart[n/2+1,2:n/2])			# row n/2+1
-    		ImagPart[2:n/2,1] = -1*(ImagPart[2:n/2,1])				# column 1
-    		ImagPart[2:n/2,n/2+1] = -1*(ImagPart[2:n/2,n/2+1])        	# column n/2+1
-    		ImagPart[1,1] = 0
-    		ImagPart[1,n/2+1] = 0
-    		ImagPart[n/2+1,1] = 0
-    		ImagPart[n/2+1,n/2+1] = 0;
+    		ImagPart[1:n/2,1:n/2] = -1*(ImagPart[1:n/2,1:n/2])			# quadrant: left, top
+    		ImagPart[n/2+1:n,1:n/2] = -1*(ImagPart[n/2+1:n,1:n/2])		# quadrant: left, bottom
+    		ImagPart[0,1:n/2] = -1*(ImagPart[0,1:n/2])    			# row 1
+    		ImagPart[n/2,1:n/2] = -1*(ImagPart[n/2,1:n/2])			# row n/2+1
+    		ImagPart[1:n/2,0] = -1*(ImagPart[1:n/2,0])				# column 1
+    		ImagPart[1:n/2,n/2] = -1*(ImagPart[1:n/2,n/2])        	# column n/2+1
+    		ImagPart[0,0] = 0
+    		ImagPart[0,n/2] = 0
+    		ImagPart[n/2,0] = 0
+    		ImagPart[n/2,n/2] = 0;
     		filter_out = RealPart+ImagPart*1j
 
     
@@ -313,10 +313,10 @@ mask_size = 512
  
       
 k = 2 #in range(25):
-noise = narrowband_noise(noise_freq, mask_size, ppd, .2, noise_max, noise_min)
-sc.save("..\noise\noise%i_%.3fppd_%.3f_%.3f.mat" % ( mask_size, ppd, noise_freq, k), 'noise')
+#noise = narrowband_noise(noise_freq, mask_size, ppd, .2, noise_max, noise_min)
+#sc.save("..\noise\noise%i_%.3fppd_%.3f_%.3f.mat" % ( mask_size, ppd, noise_freq, k), 'noise')
 
-"""
+
 freq=noise_freq
 mask_size=512
 ppd=31.277
@@ -361,4 +361,3 @@ while max_val > max_noise or min_val < min_noise:
     values_min.append(min_val)
     values_max.append(max_val)
 
-"""

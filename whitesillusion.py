@@ -200,25 +200,103 @@ def contours_white_bmmc(shape, ppd, contrast, frequency, mean_lum=.5,
     dark = mean_lum * (1 - contrast)
     offset = contour_width // 2
     if orientation == 'vertical':
-        idx_mask[y_pos: -y_pos,
-                 x_pos[0] - offset : x_pos[0] + offset] = True
-        idx_mask[y_pos: -y_pos,
-                 x_pos[0] + hc - offset : x_pos[0] + hc + offset] = True
-        idx_mask[y_pos: -y_pos,
-                 x_pos[1] - offset : x_pos[1] + offset] = True
-        idx_mask[y_pos: -y_pos,
-                 x_pos[1] + hc - offset : x_pos[1] + hc + offset] = True
+        idx_mask[y_pos: -y_pos, x_pos[0] - offset      : x_pos[0] + offset]      = True
+        idx_mask[y_pos: -y_pos, x_pos[0] + hc - offset : x_pos[0] + hc + offset] = True
+        idx_mask[y_pos: -y_pos, x_pos[1] - offset      : x_pos[1] + offset]      = True
+        idx_mask[y_pos: -y_pos, x_pos[1] + hc - offset : x_pos[1] + hc + offset] = True
+        # Add cross hatching       
+        for n in np.arange(87,-125,-2):
+            idx_mask[n   : n+1, x_pos[0] - offset]      = False
+            idx_mask[n+1 : n+2, x_pos[0]         ]      = False
+            idx_mask[n   : n-1, x_pos[0] + offset]      = False
+            
+            idx_mask[n   : n+1, x_pos[0] + hc - offset]      = False
+            idx_mask[n+1 : n+2, x_pos[0] + hc        ]      = False
+            idx_mask[n   : n-1, x_pos[0] + hc + offset]      = False
+            
+            idx_mask[n   : n+1, x_pos[1] - offset]      = False
+            idx_mask[n+1 : n+2, x_pos[1]         ]      = False
+            idx_mask[n   : n-1, x_pos[1] + offset]      = False
+            
+            idx_mask[n   : n+1, x_pos[1] + hc - offset]      = False
+            idx_mask[n+1 : n+2, x_pos[1] + hc         ]      = False
+            idx_mask[n   : n-1, x_pos[1] + hc + offset]      = False
+        mask_dark[np.roll(idx_mask,1,axis=0)] = dark # shift y axis 1 to create inverse crosshatch
+        mask_bright[idx_mask] = bright
+        mask_dark=mask_dark+mask_bright
+        mask_bright=np.fliplr(mask_dark)
+       
     elif orientation == 'horizontal':
-        idx_mask[y_pos - offset : y_pos + offset,
-                 x_pos[0] : x_pos[0] + hc] = True
-        idx_mask[y_pos - offset : y_pos + offset,
-                 x_pos[1] : x_pos[1] + hc] = True
-        idx_mask[-y_pos - offset : -y_pos + offset,
-                 x_pos[0] : x_pos[0] + hc] = True
-        idx_mask[-y_pos - offset : -y_pos + offset,
-                 x_pos[1] : x_pos[1] + hc] = True
-    mask_dark[idx_mask] = dark
-    mask_bright[idx_mask] = bright
+        idx_mask[y_pos - offset : y_pos + offset, x_pos[0] : x_pos[0] + hc] = True
+        idx_mask[y_pos - offset : y_pos + offset, x_pos[1] : x_pos[1] + hc] = True
+        idx_mask[-y_pos - offset : -y_pos + offset, x_pos[0] : x_pos[0] + hc] = True
+        idx_mask[-y_pos - offset : -y_pos + offset, x_pos[1] : x_pos[1] + hc] = True
+        mask_dark[idx_mask] = dark
+        mask_bright[idx_mask] = bright
+        
+    elif orientation == 'sup_dep_short':
+        idx_mask[ y_pos+patch_height:y_pos+patch_height+y_pos/2, x_pos[0] - offset      : x_pos[0] + offset]      = True
+        idx_mask[ y_pos+patch_height:y_pos+patch_height+y_pos/2, x_pos[0] + hc - offset : x_pos[0] + hc + offset] = True
+        idx_mask[ y_pos/2: y_pos                               , x_pos[0] - offset      : x_pos[0] + offset]      = True
+        idx_mask[ y_pos/2: y_pos                               , x_pos[0] + hc - offset : x_pos[0] + hc + offset] = True
+        idx_mask[ y_pos+patch_height:y_pos+patch_height+y_pos/2, x_pos[1] - offset      : x_pos[1] + offset]      = True
+        idx_mask[ y_pos+patch_height:y_pos+patch_height+y_pos/2, x_pos[1] + hc - offset : x_pos[1] + hc + offset] = True
+        idx_mask[y_pos/2: y_pos                                , x_pos[1] - offset      : x_pos[1] + offset]      = True
+        idx_mask[y_pos/2: y_pos                                , x_pos[1] + hc - offset : x_pos[1] + hc + offset] = True
+        mask_dark[idx_mask] = dark
+        mask_bright[idx_mask] = bright
+        
+    elif orientation == 'sup_dep_long':        
+        idx_mask[ y_pos+patch_height:-1                   , x_pos[0] - offset      : x_pos[0] + offset]      = True
+        idx_mask[ y_pos+patch_height:-1                   , x_pos[0] + hc - offset : x_pos[0] + hc + offset] = True
+        idx_mask[ 0: y_pos                                , x_pos[0] - offset      : x_pos[0] + offset]      = True
+        idx_mask[ 0: y_pos                                , x_pos[0] + hc - offset : x_pos[0] + hc + offset] = True
+        idx_mask[ y_pos+patch_height:-1                   , x_pos[1] - offset      : x_pos[1] + offset]      = True
+        idx_mask[ y_pos+patch_height:-1                   , x_pos[1] + hc - offset : x_pos[1] + hc + offset] = True
+        idx_mask[ 0: y_pos                                , x_pos[1] - offset      : x_pos[1] + offset]      = True
+        idx_mask[ 0: y_pos                                , x_pos[1] + hc - offset : x_pos[1] + hc + offset] = True
+        mask_dark[idx_mask] = dark
+        mask_bright[idx_mask] = bright
+        
+    elif orientation == 'T-junction':
+        a=5 #vertical length
+        b=5#horizontal length
+        
+        #Top test patch edges
+        idx_mask[y_pos-patch_height/2+a: -y_pos-patch_height/2-a, x_pos[0] - offset      : x_pos[0] + offset]      = True
+        idx_mask[y_pos-patch_height/2+a: -y_pos-patch_height/2-a, x_pos[0] + hc - offset : x_pos[0] + hc + offset] = True
+        idx_mask[y_pos-patch_height/2+a: -y_pos-patch_height/2-a, x_pos[1] - offset      : x_pos[1] + offset]      = True
+        idx_mask[y_pos-patch_height/2+a: -y_pos-patch_height/2-a, x_pos[1] + hc - offset : x_pos[1] + hc + offset] = True
+        idx_mask[y_pos - offset : y_pos + offset, x_pos[0] : x_pos[0] + hc] = True
+        idx_mask[y_pos - offset : y_pos + offset, x_pos[1] : x_pos[1] + hc] = True
+        #idx_mask[y_pos - offset : y_pos + offset, x_pos[0]+b : x_pos[0] + hc -b] = False
+        #idx_mask[y_pos - offset : y_pos + offset, x_pos[1]+b : x_pos[1] + hc - b] = False
+        
+        # Splitting T-junctions
+        idx_mask[y_pos - offset : y_pos + offset, x_pos[0] +1: x_pos[0] +b] = False
+        idx_mask[y_pos - offset : y_pos + offset, x_pos[0] -b +hc: x_pos[0] +hc -1] = False
+        idx_mask[y_pos - offset : y_pos + offset, x_pos[1] +1: x_pos[1] + b] = False
+        idx_mask[y_pos - offset : y_pos + offset, x_pos[1] -b +hc: x_pos[1] +hc -1] = False
+        
+        #Bottom test patch edges
+        idx_mask[y_pos+patch_height/2+a: -y_pos+patch_height/2-a, x_pos[0] - offset      : x_pos[0] + offset]      = True
+        idx_mask[y_pos+patch_height/2+a: -y_pos+patch_height/2-a, x_pos[0] + hc - offset : x_pos[0] + hc + offset] = True
+        idx_mask[y_pos+patch_height/2+a: -y_pos+patch_height/2-a, x_pos[1] - offset      : x_pos[1] + offset]      = True
+        idx_mask[y_pos+patch_height/2+a: -y_pos+patch_height/2-a, x_pos[1] + hc - offset : x_pos[1] + hc + offset] = True
+        idx_mask[-y_pos - offset : -y_pos + offset, x_pos[0] : x_pos[0] + hc] = True
+        idx_mask[-y_pos - offset : -y_pos + offset, x_pos[1] : x_pos[1] + hc] = True
+        #idx_mask[-y_pos - offset : -y_pos + offset, x_pos[0]+b : x_pos[0] + hc -b] = False
+        #idx_mask[-y_pos - offset : -y_pos + offset, x_pos[1]+b : x_pos[1] + hc - b] = False
+        
+        #Splitting T-junctions
+        idx_mask[-y_pos - offset : -y_pos + offset, x_pos[0]+1 : x_pos[0] + b] = False
+        idx_mask[-y_pos - offset : -y_pos + offset, x_pos[0] -b +hc: x_pos[0] +hc -1] = False
+        idx_mask[-y_pos - offset : -y_pos + offset, x_pos[1]+1 : x_pos[1] + b] = False
+        idx_mask[-y_pos - offset : -y_pos + offset, x_pos[1] -b +hc: x_pos[1] +hc -1] = False
+        
+        mask_dark[idx_mask] = dark
+        mask_bright[idx_mask] = bright
+    
     return (mask_dark, mask_bright)
 
 
@@ -232,18 +310,30 @@ def evaluate(patch_h,direction):
         mask_dark,mask_bright = contours_white_bmmc((2,2),100,1,2,mean_lum=gray/2,contour_width=2,patch_height=patch_h,orientation='horizontal')
     elif direction == 'v': # vertical bars
         mask_dark,mask_bright = contours_white_bmmc((2,2),100,1,2,mean_lum=gray/2,contour_width=2,patch_height=patch_h,orientation='vertical')
+    elif direction == 's':
+        mask_dark,mask_bright = contours_white_bmmc((2,2),100,1,2,mean_lum=gray,contour_width=2,patch_height=patch_h,orientation='sup_dep_long')
+    elif direction == 't':
+        mask_dark,mask_bright = contours_white_bmmc((2,2),100,1,2,mean_lum=gray,contour_width=2,patch_height=patch_h,orientation='T-junction')
     elif direction == 'both': # both directions
+        mask_dark = []
         mask_dark_h,mask_bright_h = contours_white_bmmc((2,2),100,1,2,mean_lum=gray/4,contour_width=2,patch_height=patch_h,orientation='horizontal')
         mask_dark_v,mask_bright_v = contours_white_bmmc((2,2),100,1,2,mean_lum=gray/4,contour_width=2,patch_height=patch_h,orientation='vertical')
         mask_dark = mask_dark_h + mask_dark_v
         mask_bright = mask_bright_h + mask_bright_v
-    
+    else:
+        print "Incorrect reference"
     return stim, mask_dark, mask_bright
 
 
 ####### Testing Code for Printing Output for different cases #######
 
-#stim,mask_dark_both,mask_bright_both=evaluate(0.25,'both')
+stim,mask_dark_supdep,mask_bright_supdep=evaluate(0.25,'t')
+import matplotlib.pyplot as plt
+fig, (ax1,ax2,ax3) = plt.subplots(ncols=3, figsize=(10,3))
+ax1.imshow(stim,cmap='gray')
+ax2.imshow(mask_dark_supdep,cmap='gray')
+ax3.imshow(mask_bright_supdep,cmap='gray')
+
 #stim,mask_dark_v,mask_bright_v=evaluate(0.25,'v')
 #
 #import matplotlib.pyplot as plt

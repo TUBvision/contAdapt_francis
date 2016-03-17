@@ -100,8 +100,8 @@ class CANNEM(object):
                       'Annuli', 'Incomplete', 'Robinson-deSa2013', 
                       'Robinson-deSa2012-E1', 'Robinson-deSa2012-E2', 'Prediction','Whites-Illusion'],
                  timeStep = 0.1, # Set timing Parameters (seconds)
-                 stopTime = 6, # seconds 6 for A&G conditions - makes for 4 second adaptation
-                 testOnset = 6 - 2,
+                 stopTime = 8, # seconds 6 for A&G conditions - makes for 4 second adaptation
+                 testOnset = 8 - 2,
                  ):
                      self.startTime = timeStep
                      self.testOnset = stopTime - 2
@@ -913,49 +913,55 @@ class CANNEM(object):
         Usage: 
         >>> fillingin(self)
         
-        FIDO - regions of connected boundary points    
-        "Most of this code is an algorithmic way of identifying distinct Filling-In DOmains (FIDOs)"
+        Filling-In DOmain (FIDO) - regions of connected boundary points
+        
+        This function is an algorithmic way of identifying distinct FIDOs. 
+        The colour of each pixel within an region is set to the regions' 
+        average pixel color.
+        
+        Connected pixels are disconnected in the present of a boundary signal
+        perpendicular to their connection orientation. Pixels can be connected
+        to any of it's four nearest neighbours.
         
         Parameters
         -----------
-        O2 :
-                
-        BndThr :
-                
-        nOrient :
-                
-        Bshift1/2 :
-                Boundaries that block flow for the corresponding shift
-        shiftOrientation :
-                orientation of flow 
-        shift :
-                up, down, left, right
+        O2 : array-like 
+                gated-dipole output
+        BndThr : int
+                boundary threshold value
+        nOrient : int
+                number of orientations
+        shiftOrientation : list
+                orientation of nearest neighbours [pi/2,pi/2,0,0] 
+        shift : list UNUSED
+                nearest neighbours [up, down, left, right]
+        Bshift1/2 : list
+                Shifts from neighbour-centre-pixel for blocking boundary positions
+
         
         Returns
         -----------
-        P :
+        P : array-like
                 boundary structure
-        FIDO :
+        FIDO : array-like
                 fido
-        S_rb/by/wb :
+        S_rb/by/wb : array-like
                 output signals
         
         """
         shiftOrientation = [np.pi/2, np.pi/2, 0, 0]
-        # Boundaries that block flow for the corresponding shift
         Bshift1 = np.array([[-1, -1],[ 0, -1],[ -1, -1],[ -1, 0]])
         Bshift2 = np.array([[-1,  0],[ 0,  0],[  0, -1],[  0, 0]])
          
-        # boundary signals
-        # Most of this code is an algorithmic way of identifying distinct Filling-In DOmains (FIDOs)
-        BndSig = np.sum(self.O2[:,:,:],2)
+        # Prepare boundary signals
+        BndSig = np.sum(self.O2[:,:,:],2) # Sum across orientations
         thint = self.O2.shape
-        BndSig = 100*BndSig
-        BndSig[BndSig < 0] = 0
+        BndThr = 0
+        BndSig = 100*(BndSig-BndThr)      # Amplify signal
+        BndSig[BndSig < 0] = 0            # Half wave rectifier
         
         sX = np.size(BndSig, 0)
         sY = np.size(BndSig, 1)
-        
         stimarea_x = np.arange(1,np.size(BndSig, 0)-1) 
         stimarea_y = np.arange(1,np.size(BndSig, 1)-1)
         
@@ -987,10 +993,12 @@ class CANNEM(object):
             
             P[stimarea_x[0]:stimarea_x[-1]+1:1, stimarea_y[0]:stimarea_y[-1]+1:1,i] =   a1- a2
                 
-        # find FIDOs and average within them
+        
+        
+        # Filling-in stage - find FIDOs and average within them
+        
+        # create unique number for each cell in the FIDO
         FIDO_ini = np.zeros((sX, sY))
-                
-        # unique number for each cell in the FIDO
         for i in np.arange(0,sX):
             for j in np.arange(0,sY):
                 FIDO_ini[i,j] = (i+1)+ (j+1)*thint[0]  
@@ -1015,7 +1023,6 @@ class CANNEM(object):
         self.S_wb = np.zeros((sX, sY))
         self.S_rg = np.zeros((sX, sY))
         self.S_by = np.zeros((sX, sY)) 
-        
         
         # Compute average color for unique FIDOs
         FIDO = FIDO.astype(int)
