@@ -7,7 +7,7 @@ Created on Thu Mar 17 11:12:19 2016
 
 from PIL import Image, ImageSequence
 from images2gif import writeGif
-import os, 
+import os 
 import numpy as np
 timeStep=0.1
 stopTime=8

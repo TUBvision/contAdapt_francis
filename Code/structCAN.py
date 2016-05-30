@@ -42,7 +42,7 @@ class CANNEM(object):
     patch_h=1   ,direction='v'    # Default vertical e.g.
     patch_h=0.25,direction='h'    # Square  square   e.g.
     
-    >>> mst.evaluate(11,patch_h=0.25,direction='h')
+    >>> mst.evaluate(11,patch_h=0.25,direction='h',noise=0.33)
 
     To plot variables, after initializing the stimuli condition use e.g.:
     
@@ -71,6 +71,8 @@ class CANNEM(object):
             time between images
     stopTime : int
             end time of images
+    noise    : triple 
+            noise mask - Options: [0.11,0.19,0.33,0.58,1.00,1.73,3.00,5.20,9.00] (0 if none)
     
     
     Returns
@@ -119,12 +121,13 @@ class CANNEM(object):
                      self.timeCount=0
                      
                      
-    def evaluate(self,condition,patch_h=1,direction='v'):
+    def evaluate(self,condition,patch_h=1,direction='v',noise=0):
         """
         - Kernels are made
         - Simulation begins in 'time' for loop
         - Each step described in more detail within themselves        
         """
+        self.noise=[noise,512,31] # 2nd/3rd : dimensions and ppd of noise
         self.condition = condition        
         self.patch_h = patch_h
         self.direction = direction
@@ -132,7 +135,7 @@ class CANNEM(object):
         print "Simulation condition : ", self.Conditions[condition]
         for time in np.arange(self.startTime, self.stopTime+self.timeStep, self.timeStep):
             self.timeCount= self.timeCount+1
-            self.createStimulus(time,5,condition)
+            self.createStimulus(time,5,condition,noise)
             self.LGNcells()
             self.simpleCell()
             self.complexCell(25)
@@ -211,7 +214,7 @@ class CANNEM(object):
             normalizer = np.sum(np.sum( F[:,:,k]*F[:,:,k] ) )
             self.F[:,:,k] = F[:,:,k]/np.sqrt(normalizer)
     
-    def createStimulus(self,time,testColorChange,condition):
+    def createStimulus(self,time,testColorChange,condition,noise):
         """
         Usage: 
         >>> createStimulus(self,time,5,0)
@@ -672,6 +675,11 @@ class CANNEM(object):
         self.startInputImage[self.i_x/2  ,self.i_y/2  ]=255
         self.startInputImage[self.i_x/2-2,self.i_y/2  ]=0
         self.startInputImage[self.i_x/2  ,self.i_y/2-2]=0
+        
+        # Add noise
+        if self.noise[0] > 0:
+            mask1=np.load("{0}{1}{2}{3}{4}{5}{6}".format('/home/will/Documents/noisemasks/noise',self.noise[1],'_',self.noise[2],'ppd_',self.noise[0],'0_5.npy'))
+            self.startInputImage=(mask1[0:200,0:200]*255)+self.startInputImage    
                   
         # Convert RGB input image to red-green, blue-yellow, white-black coordinates
         self.inputImage = np.zeros((200,200,3))
@@ -1042,7 +1050,7 @@ class CANNEM(object):
         """
         
         # Create directorself.y for results
-        self.resultsDirectory = os.path.dirname("{0}/{1}".format("Condition",
+        self.resultsDirectory = os.path.dirname("{0}/{1}".format("Image_Outputs",
                                            self.Conditions[condition]))
         if os.path.exists(self.resultsDirectory)==0:
             os.mkdir(self.resultsDirectory)        
@@ -1263,3 +1271,4 @@ def conv2(x,y,mode='same'):
     z = convolve(x,y, mode='constant', origin=origin)
 
     return z
+
