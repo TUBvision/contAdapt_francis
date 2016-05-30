@@ -17,18 +17,18 @@ Code
     square_wave.py              Stimulus creator
     whitesillusion.py 	        Generates white's illusion stimuli and adapters
     
-    BEATS.py 	                    Diffusion model of filling-in
-    run_file.py 	            Run file for CANNEM
+    BEATS.py 	                  Diffusion model of filling-in
+    run_file.py 	              Run file for CANNEM
     structCAN.py  	            The neural module model (CANNEM)
 
 Documents
 
-    IOSS.odt 	                   Description of Iso-oriented surround suppression development issues
+    IOSS.odt 	                     Description of Iso-oriented surround suppression development issues
     Presentation_of_Model.odp      Presentation of CANNEM model
     zebra.jpg                      Default input image for BEATS
     
 Output_Media
 
-    Beats_Outputs		   Output videos from BEATS
-    Images			   Images from stages in structCAN
+    Beats_Outputs	            	   Output videos from BEATS
+    Images			                   Images from stages in structCAN
     Movies                         Output Movies from structCAN
