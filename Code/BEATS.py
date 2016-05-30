@@ -9,7 +9,9 @@ import sympy as sp
 import scipy.ndimage.filters as flt
 import square_wave
 import matplotlib as plt
+import cv2
 from PIL import Image
+
 # BEATS FILLING IN
 """
 Task of visual system to create normalized image
@@ -45,9 +47,11 @@ def T(lamda,x):
     if lamda == 0:  # linearity
         return x
     elif lamda > 0: #  Half-wave rectification
-        return np.max(x,0)
+        maxval = np.zeros_like(x)
+        return np.array([x, maxval]).max(axis=0)
     elif lamda < 0: # Inverse half-wave rectification
-        return np.min(0,x)
+        minval = np.zeros_like(x)
+        return np.array([x, minval]).min(axis=0)
         
 
 def Diffusion_operator(lamda,f,t): # 2D Spatially Discrete Non-Linear Diffusion
@@ -76,11 +80,10 @@ def Diffusion_operator(lamda,f,t): # 2D Spatially Discrete Non-Linear Diffusion
     if lamda == 0:  # linearity
         return flt.laplace(f)
     else:           # non-linearity
-        f_new = np.zeros(f.shape)
-        for x in np.arange(0,f.shape[0]-1):
-            for y in np.arange(0,f.shape[1]-1):
-                f_new[x,y]=T(lamda,f[x+1,y]-f[x,y]) + T(lamda,f[x-1,y]-f[x,y]) + T(lamda,f[x,y+1]-f[x,y])
-                + T(lamda,f[x,y-1]-f[x,y])
+        f_new = T(lamda,np.roll(f,1, axis=0)-f) \
+        +T(lamda,np.roll(f,-1, axis=0)-f) \
+        +T(lamda,np.roll(f, 1, axis=1)-f) \
+        +T(lamda,np.roll(f,-1, axis=1)-f)
         return f_new
 
 
@@ -118,7 +121,7 @@ def Runge_Kutta(stimulus,lamda,t0,h,N,D,t_N):
     
     if lamda ==0:
         """    Linearity  Global Activity Preserved   """
-        for n in np.arange(0,t_N):
+        for n in np.arange(0,t_N,h):
             k1 = D*flt.laplace(f[t[n],:,:]) + stimulus*Dirac_delta_test(t[n]-t0)
             k1 = k1.astype(np.float64)
             k2 = D*flt.laplace(f[t[n]+(h/2.),:,:]+(0.5*h*k1)) + stimulus*Dirac_delta_test((t[n]+(0.5*h))- t0)
@@ -143,103 +146,159 @@ def Runge_Kutta(stimulus,lamda,t0,h,N,D,t_N):
             k4 = D*Diffusion_operator(lamda,(f[t[n]+h,:,:]+(h*k3)),t[n]) + stimulus*Dirac_delta_test((t[n]+h)-t0)
             k4 = k4.astype(np.float64)
             f[n+1,:,:] = f[n,:,:] + (h/6.) * (k1 + 2.*k2 + 2.*k3 + k4)
-            t[n+1] = t[n] + h
-            
+            t[n+1] = t[n] + h   
         return f
 
-#im = Image.open("/home/will/Downloads/lenaTest3.jpg")
-#arr = np.array(im)
-#arr=arr/253.
 
-# Code to run
-N=512   # Image size
-stimulus = square_wave.square_wave((1,1), N, 1, 6, mean_lum=.5, period='ignore',start='high')
-D = 0.05  #[0---1]
-h = 1 #   h > 0
-t0 = 0 # Injection time 
-t_N = 500
-
-f_out = Runge_Kutta(stimulus,0,t0,h,N,D,t_N)*6
-
-f_out_first= f_out[0,:,:]
-f_out_second= f_out[1,:,:]
-
-# std of activity over time
-f_out_std=np.std(f_out,2)
-f_out_std=np.std(f_out_std,1)
-
-# Average pixel activity
-f_out_av=np.mean(f_out,2)
-f_out_av=np.mean(f_out_av,1)
-
-# How the images evolve
-fig1, (ax1,ax2,ax3,ax4,ax5,ax6,ax7) = plt.pyplot.subplots(ncols=7, figsize=(20,5))
-ax1.imshow(f_out[1,:,:], cmap='gray')
-ax2.imshow(f_out[10,:,:], cmap='gray')
-ax3.imshow(f_out[25,:,:], cmap='gray')
-ax4.imshow(f_out[50,:,:], cmap='gray')
-ax5.imshow(f_out[100,:,:], cmap='gray')
-ax6.imshow(f_out[250,:,:], cmap='gray')
-ax7.imshow(f_out[500,:,:], cmap='gray')
-
-# How the pixel distribution evolves
-#ylim_max=2500
-#xlim_max=1
-#fig3, (ax1,ax2,ax3,ax4,ax5,ax6) = plt.pyplot.subplots(ncols=6, figsize=(20,5))
-#ax1.hist(np.reshape(f_out[1,:,:],f_out.shape[1]*f_out.shape[2]),bins=20)
-#ax1.set_xlim(0.0,xlim_max)
-#ax1.set_ylim(0,ylim_max)
-#ax2.hist(np.reshape(f_out[5,:,:],f_out.shape[1]*f_out.shape[2]),bins=20)
-#ax2.set_xlim(0.0,xlim_max)
-#ax2.set_ylim(0,ylim_max)
-#ax3.hist(np.reshape(f_out[10,:,:],f_out.shape[1]*f_out.shape[2]),bins=20)
-#ax3.set_ylim(0,ylim_max)
-#ax3.set_xlim(0.0,xlim_max)
-#ax4.hist(np.reshape(f_out[20,:,:],f_out.shape[1]*f_out.shape[2]),bins=20)
-#ax4.set_ylim(0,ylim_max)
-#ax4.set_xlim(0.0,xlim_max)
-#ax5.hist(np.reshape(f_out[50,:,:],f_out.shape[1]*f_out.shape[2]),bins=20)
-#ax5.set_ylim(0,ylim_max)
-#ax5.set_xlim(0.0,xlim_max)
-#ax6.hist(np.reshape(f_out[100,:,:],f_out.shape[1]*f_out.shape[2]),bins=20)
-#ax6.set_ylim(0,ylim_max)
-#ax6.set_xlim(0.0,xlim_max)
-
-a = Runge_Kutta(stimulus,-1,t0,h,N,D,t_N)*6
-b = Runge_Kutta(stimulus,1,t0,h,N,D,t_N)*6
-
-def Global_normalization(stimulus,t0,h,N,D,t_N,a,b):
+def ONtype_norm(stimulus,t0,h,N,D,t_N,a,b):
     """
-    Dynamic normalization of image - reminicant of filling-in
-    
-    Steady-state solution to differential equation needs redefining
+    Dynamic normalization or lightness filling-in
     """
     # steady state solution
-    c = np.zeros((t_N+1,N,N))
-    #cd_out = np.zeros((t_N+1,N,N))
-    for t in np.arange(0,t_N):
-        first = (stimulus-a[t,:,:])
-        if np.sum(first) == 0: # avoid NaNs
-            first = np.ones(first.shape)
-        second =  (b[t,:,:]-a[t,:,:])
-        c[t,:,:] = first/second  # normalized representation of stimulus
-        #one = b[t,:,:]*(np.zeros(first.shape)-c[t,:,:])
-        #two = a[t,:,:]*(np.ones(first.shape)-c[t,:,:])
-        #cd_out[t,:,:] = one-two+stimulus    
-    return c
+    c = np.zeros((t_N,N,N))
+    cd_out = np.zeros((t_N,N,N))
+    
+    for t in np.arange(0,t_N-1):
+        c_1 = np.round((stimulus-a[t,:,:]),1)
+        c_2 = np.round((b[t,:,:]-a[t,:,:]),1)
+        c[t,:,:] =  c_1/c_2
+        
+    #c[np.isinf(c)]=1
+    #c[np.isnan(c)]=1 
+    
+    for t in np.arange(0,t_N-1):
+        cd_out_1 = b[t,:,:]*(np.zeros((N,N))-c[t,:,:])
+        cd_out_2 = a[t,:,:]*(np.ones((N,N))-c[t,:,:])
+        #cd_out_1[np.isinf(cd_out_1)]=1
+        #cd_out_2[np.isinf(cd_out_2)]=1
+        #cd_out_1[np.isnan(cd_out_1)]=1
+        #cd_out_2[np.isnan(cd_out_2)]=1
+        cd_out[t,:,:] = cd_out_1 - cd_out_2 + stimulus      
+    return c , cd_out
+    
+
+def OFFtype_norm(t_N,N,a,b,c,s):
+    """
+    Inverse dynamic normalization or darkness filling-in
+    """
+    d = np.zeros((t_N,N,N))
+    d_out = np.zeros((t_N,N,N))
+    for t in np.arange(0,t_N-1):
+        d[t,:,:] = np.ones((N,N)) - c[t,:,:] #Off       
+       
+        d_out_1 = b[t,:,:]*c[t,:,:]
+        d_out_2 = a[t,:,:]*(c[t,:,:]-np.ones((N,N)))
+        d_out[t,:,:] = d_out_1 - d_out_2 - s
+    return d, d_out
+    
 
 
-c_out = Global_normalization(stimulus,t0,h,N,D,t_N,a,b)
-#def Nonlinear_contrast
-#    d = (b-s)/(b-a) # Off
-#    
-#    return [c,d]
+""" 
+RUN CODE
 
-plotter=c_out
-fig3, (ax1,ax2,ax3,ax4,ax5,ax6) = plt.pyplot.subplots(ncols=6, figsize=(20,5))
-ax1.imshow(plotter[1,:,:], cmap='gray')
-ax2.imshow(plotter[2,:,:], cmap='gray')
-ax3.imshow(plotter[10,:,:], cmap='gray')
-ax4.imshow(plotter[20,:,:], cmap='gray')
-ax5.imshow(plotter[30,:,:], cmap='gray')
-ax6.imshow(plotter[-2,:,:], cmap='gray')
+Parameters
+-------------
+N : int     Image dimension
+D : int     Diffusion coefficient - weights rate of lightness diffusion [0<D<1]
+h : int     Runga-Kutta integration step h>0
+t0 : int    Stimulus injection times
+tN : int    Length of stimulation
+"""
+
+# Import jpg image or use square wave stimulus
+im = Image.open("/home/will/Documents/Git_Repository/zebra.jpg").convert('L')
+arr = np.array(im)
+arr=arr/255.
+N=arr.shape[1]
+
+#N = 128
+#stimulus = square_wave.square_wave((1,1), N, 1, 6, mean_lum=.5, period='ignore',start='high')
+
+stimulus = arr[0:N,0:N]
+D = 0.05 
+h = 1  
+t0 = 0
+t_N = 300
+
+# Three diffusion behaviour states
+f_out = Runge_Kutta(stimulus,0,t0,h,N,D,t_N) # Equilibrium
+a = Runge_Kutta(stimulus,-1,t0,h,N,D,t_N) # Minimum syncytiun (evolves into global minimum)
+b = Runge_Kutta(stimulus,1,t0,h,N,D,t_N) # Max syncytium (evolves into global maximum)
+
+# Two diffusion layers
+c, c_out = ONtype_norm(stimulus,t0,h,N,D,t_N,a,b) # Lightness filling-in
+d, d_out = OFFtype_norm(t_N,N,a,b,c,stimulus)     # Darkness filling-in
+
+""" What is a percivable lightness increment? """
+
+""" Plotting """
+#plotter1=f_out
+#plotter2=c
+#plotter3=d
+#pl_max1=np.max(plotter1)
+#pl_max2=np.max(plotter2)
+#pl_max3=np.max(plotter3)
+#
+#f, axarr = plt.pyplot.subplots(2, 6)
+##axarr[0, 0].imshow(plotter1[1,:,:], cmap='gray')#,vmin=0,vmax=pl_max1)
+##axarr[0, 1].imshow(plotter1[10,:,:], cmap='gray')#,vmin=0,vmax=pl_max1)
+##axarr[0, 2].imshow(plotter1[50,:,:], cmap='gray')#,vmin=0,vmax=pl_max1)
+##axarr[0, 3].imshow(plotter1[100,:,:], cmap='gray')#,vmin=0,vmax=pl_max1)
+##axarr[0, 4].imshow(plotter1[200,:,:], cmap='gray')#,vmin=0,vmax=pl_max1)
+##axarr[0, 5].imshow(plotter1[300,:,:], cmap='gray')#,vmin=0,vmax=pl_max1)
+#
+#axarr[1, 0].imshow(plotter2[0,:,:], cmap='gray')#,vmin=0,vmax=1)
+#axarr[1, 1].imshow(plotter2[1,:,:], cmap='gray')#,vmin=0,vmax=1)
+#axarr[1, 2].imshow(plotter2[2,:,:], cmap='gray')#,vmin=0,vmax=1)
+#axarr[1, 3].imshow(plotter2[100,:,:], cmap='gray')#,vmin=0,vmax=1)
+#axarr[1, 4].imshow(plotter2[200,:,:], cmap='gray')#,vmin=0,vmax=1)
+#axarr[1, 5].imshow(plotter2[250,:,:], cmap='gray')#,vmin=0,vmax=1)
+#
+#axarr[0, 0].imshow(plotter3[0,:,:], cmap='gray')#,vmin=0,vmax=1)
+#axarr[0, 1].imshow(plotter3[1,:,:], cmap='gray')#,vmin=0,vmax=1)
+#axarr[0, 2].imshow(plotter3[2,:,:], cmap='gray')#,vmin=0,vmax=1)
+#axarr[0, 3].imshow(plotter3[100,:,:], cmap='gray')#,vmin=0,vmax=1)
+#axarr[0, 4].imshow(plotter3[200,:,:], cmap='gray')#,vmin=0,vmax=1)
+#axarr[0, 5].imshow(plotter3[250,:,:], cmap='gray')#,vmin=0,vmax=1)
+
+#
+#
+#""" Numpy to Avi """
+
+
+
+imag = d     # Image array to convert into video file
+imag_name = 'd_0.05' # Name of image to be saved to
+fps = 60            # Frames per second [3-5 default]
+
+imag_int8=(imag*255.).astype('uint8')  # Rescale back to RGB255 and change to uint8 format for avi 
+filename = "{0}{1}{2}".format('/home/will/Documents/Git_Repository/Outputs/',imag_name,'.avi')
+writer = cv2.VideoWriter(filename, cv2.cv.CV_FOURCC('M','J','P','G'), fps, (N, N), False)
+for i in np.arange(0,t_N):
+    writer.write(imag_int8[i,:,:])
+
+
+## How the images evolve
+
+## How the pixel distribution evolves
+##ylim_max=2500
+##xlim_max=1
+##fig3, (ax1,ax2,ax3,ax4,ax5,ax6) = plt.pyplot.subplots(ncols=6, figsize=(20,5))
+##ax1.hist(np.reshape(f_out[1,:,:],f_out.shape[1]*f_out.shape[2]),bins=20)
+##ax1.set_xlim(0.0,xlim_max)
+##ax1.set_ylim(0,ylim_max)
+##ax2.hist(np.reshape(f_out[5,:,:],f_out.shape[1]*f_out.shape[2]),bins=20)
+##ax2.set_xlim(0.0,xlim_max)
+##ax2.set_ylim(0,ylim_max)
+##ax3.hist(np.reshape(f_out[10,:,:],f_out.shape[1]*f_out.shape[2]),bins=20)
+##ax3.set_ylim(0,ylim_max)
+##ax3.set_xlim(0.0,xlim_max)
+##ax4.hist(np.reshape(f_out[20,:,:],f_out.shape[1]*f_out.shape[2]),bins=20)
+##ax4.set_ylim(0,ylim_max)
+##ax4.set_xlim(0.0,xlim_max)
+##ax5.hist(np.reshape(f_out[50,:,:],f_out.shape[1]*f_out.shape[2]),bins=20)
+##ax5.set_ylim(0,ylim_max)
+##ax5.set_xlim(0.0,xlim_max)
+##ax6.hist(np.reshape(f_out[100,:,:],f_out.shape[1]*f_out.shape[2]),bins=20)
+##ax6.set_ylim(0,ylim_max)
+##ax6.set_xlim(0.0,xlim_max)
