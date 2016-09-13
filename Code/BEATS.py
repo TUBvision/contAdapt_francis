@@ -206,7 +206,7 @@ tN : int    Length of stimulation
 """
 
 # Import jpg image or use square wave stimulus
-im = Image.open("/home/will/Documents/Git_Repository/zebra.jpg").convert('L')
+im = Image.open("/home/will/gitrepos/contAdaptTranslation/Documents/whites.jpg").convert('L')
 arr = np.array(im)
 arr=arr/255.
 N=arr.shape[1]
@@ -215,7 +215,7 @@ N=arr.shape[1]
 #stimulus = square_wave.square_wave((1,1), N, 1, 6, mean_lum=.5, period='ignore',start='high')
 
 stimulus = arr[0:N,0:N]
-D = 0.05 
+D = 0.5 # SPEED OF DIFFUSION
 h = 1  
 t0 = 0
 t_N = 300
@@ -231,35 +231,37 @@ d, d_out = OFFtype_norm(t_N,N,a,b,c,stimulus)     # Darkness filling-in
 
 """ What is a percivable lightness increment? """
 
+""" Keil typically uses ON output as "percept" """
+
 """ Plotting """
-#plotter1=f_out
-#plotter2=c
-#plotter3=d
-#pl_max1=np.max(plotter1)
-#pl_max2=np.max(plotter2)
-#pl_max3=np.max(plotter3)
-#
-#f, axarr = plt.pyplot.subplots(2, 6)
-##axarr[0, 0].imshow(plotter1[1,:,:], cmap='gray')#,vmin=0,vmax=pl_max1)
-##axarr[0, 1].imshow(plotter1[10,:,:], cmap='gray')#,vmin=0,vmax=pl_max1)
-##axarr[0, 2].imshow(plotter1[50,:,:], cmap='gray')#,vmin=0,vmax=pl_max1)
-##axarr[0, 3].imshow(plotter1[100,:,:], cmap='gray')#,vmin=0,vmax=pl_max1)
-##axarr[0, 4].imshow(plotter1[200,:,:], cmap='gray')#,vmin=0,vmax=pl_max1)
-##axarr[0, 5].imshow(plotter1[300,:,:], cmap='gray')#,vmin=0,vmax=pl_max1)
-#
-#axarr[1, 0].imshow(plotter2[0,:,:], cmap='gray')#,vmin=0,vmax=1)
-#axarr[1, 1].imshow(plotter2[1,:,:], cmap='gray')#,vmin=0,vmax=1)
-#axarr[1, 2].imshow(plotter2[2,:,:], cmap='gray')#,vmin=0,vmax=1)
-#axarr[1, 3].imshow(plotter2[100,:,:], cmap='gray')#,vmin=0,vmax=1)
-#axarr[1, 4].imshow(plotter2[200,:,:], cmap='gray')#,vmin=0,vmax=1)
-#axarr[1, 5].imshow(plotter2[250,:,:], cmap='gray')#,vmin=0,vmax=1)
-#
-#axarr[0, 0].imshow(plotter3[0,:,:], cmap='gray')#,vmin=0,vmax=1)
-#axarr[0, 1].imshow(plotter3[1,:,:], cmap='gray')#,vmin=0,vmax=1)
-#axarr[0, 2].imshow(plotter3[2,:,:], cmap='gray')#,vmin=0,vmax=1)
-#axarr[0, 3].imshow(plotter3[100,:,:], cmap='gray')#,vmin=0,vmax=1)
-#axarr[0, 4].imshow(plotter3[200,:,:], cmap='gray')#,vmin=0,vmax=1)
-#axarr[0, 5].imshow(plotter3[250,:,:], cmap='gray')#,vmin=0,vmax=1)
+plotter1=f_out
+plotter2=c
+plotter3=d
+pl_max1=np.max(plotter1)
+pl_max2=np.max(plotter2)
+pl_max3=np.max(plotter3)
+
+f, axarr = plt.pyplot.subplots(2, 6)
+#axarr[0, 0].imshow(plotter1[1,:,:], cmap='gray')#,vmin=0,vmax=pl_max1)
+#axarr[0, 1].imshow(plotter1[10,:,:], cmap='gray')#,vmin=0,vmax=pl_max1)
+#axarr[0, 2].imshow(plotter1[50,:,:], cmap='gray')#,vmin=0,vmax=pl_max1)
+#axarr[0, 3].imshow(plotter1[100,:,:], cmap='gray')#,vmin=0,vmax=pl_max1)
+#axarr[0, 4].imshow(plotter1[200,:,:], cmap='gray')#,vmin=0,vmax=pl_max1)
+#axarr[0, 5].imshow(plotter1[300,:,:], cmap='gray')#,vmin=0,vmax=pl_max1)
+
+axarr[1, 0].imshow(plotter2[50,:,:], cmap='gray')#,vmin=0,vmax=1)
+axarr[1, 1].imshow(plotter2[100,:,:], cmap='gray')#,vmin=0,vmax=1)
+axarr[1, 2].imshow(plotter2[150,:,:], cmap='gray')#,vmin=0,vmax=1)
+axarr[1, 3].imshow(plotter2[200,:,:], cmap='gray')#,vmin=0,vmax=1)
+axarr[1, 4].imshow(plotter2[250,:,:], cmap='gray')#,vmin=0,vmax=1)
+axarr[1, 5].imshow(plotter2[298,:,:], cmap='gray')#,vmin=0,vmax=1)
+
+axarr[0, 0].imshow(plotter3[50,:,:], cmap='gray')#,vmin=0,vmax=1)
+axarr[0, 1].imshow(plotter3[100,:,:], cmap='gray')#,vmin=0,vmax=1)
+axarr[0, 2].imshow(plotter3[150,:,:], cmap='gray')#,vmin=0,vmax=1)
+axarr[0, 3].imshow(plotter3[200,:,:], cmap='gray')#,vmin=0,vmax=1)
+axarr[0, 4].imshow(plotter3[250,:,:], cmap='gray')#,vmin=0,vmax=1)
+axarr[0, 5].imshow(plotter3[298,:,:], cmap='gray')#,vmin=0,vmax=1)
 
 #
 #
@@ -267,15 +269,15 @@ d, d_out = OFFtype_norm(t_N,N,a,b,c,stimulus)     # Darkness filling-in
 
 
 
-imag = d     # Image array to convert into video file
-imag_name = 'd_0.05' # Name of image to be saved to
-fps = 60            # Frames per second [3-5 default]
-
-imag_int8=(imag*255.).astype('uint8')  # Rescale back to RGB255 and change to uint8 format for avi 
-filename = "{0}{1}{2}".format('/home/will/Documents/Git_Repository/Outputs/',imag_name,'.avi')
-writer = cv2.VideoWriter(filename, cv2.cv.CV_FOURCC('M','J','P','G'), fps, (N, N), False)
-for i in np.arange(0,t_N):
-    writer.write(imag_int8[i,:,:])
+#imag = d     # Image array to convert into video file
+#imag_name = 'd_0.05' # Name of image to be saved to
+#fps = 60            # Frames per second [3-5 default]
+#
+#imag_int8=(imag*255.).astype('uint8')  # Rescale back to RGB255 and change to uint8 format for avi 
+#filename = "{0}{1}{2}".format('/home/will/Documents/Git_Repository/Outputs/',imag_name,'.avi')
+#writer = cv2.VideoWriter(filename, cv2.cv.CV_FOURCC('M','J','P','G'), fps, (N, N), False)
+#for i in np.arange(0,t_N):
+#    writer.write(imag_int8[i,:,:])
 
 
 ## How the images evolve

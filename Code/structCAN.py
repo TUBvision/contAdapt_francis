@@ -827,7 +827,7 @@ class CANNEM(object):
         for k in np.arange(0,self.K/2):
             z1[:,:,k] = self.y[:,:,k] + self.y[:,:,k+self.K/2]
         
-        # limit with boundary upper limit
+        # Oriented boundary signals thresholded with upper boundary limit
         z1[z1>boundaryUpperLimit] = boundaryUpperLimit
         
         # Add tonic input, inI, to boundaries
@@ -869,7 +869,7 @@ class CANNEM(object):
         gate_equil = Agate/(Bgate + Cgate* self.w1)
         
         # habituating gate solution
-        self.gate = gate_equil + (self.gate - gate_equil)* np.exp(-Rhogate*(Bgate+Cgate*self.w1)*self.timeStep)
+        self.gate = gate_equil + (self.gate - gate_equil)* np.exp(-Rhogate*self.timeStep*(Bgate+Cgate*self.w1))
             
     def dipoleComp(self):
         """
