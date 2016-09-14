@@ -7,10 +7,11 @@ Created on Thu Mar  3 11:33:57 2016
 import numpy as np
 import sympy as sp
 import scipy.ndimage.filters as flt
-import square_wave
+#import square_wave
 import matplotlib as plt
-import cv2
+#import cv2
 from PIL import Image
+from multiprocessing import Pool
 
 # BEATS FILLING IN
 """
@@ -209,59 +210,70 @@ tN : int    Length of stimulation
 im = Image.open("/home/will/gitrepos/contAdaptTranslation/Documents/whites.jpg").convert('L')
 arr = np.array(im)
 arr=arr/255.
-N=arr.shape[1]
+N=arr.shape[0]
 
 #N = 128
 #stimulus = square_wave.square_wave((1,1), N, 1, 6, mean_lum=.5, period='ignore',start='high')
 
 stimulus = arr[0:N,0:N]
-D = 0.5 # SPEED OF DIFFUSION
+D = 0.2 # SPEED OF DIFFUSION
 h = 1  
 t0 = 0
-t_N = 300
+t_N = 500
 
 # Three diffusion behaviour states
-f_out = Runge_Kutta(stimulus,0,t0,h,N,D,t_N) # Equilibrium
-a = Runge_Kutta(stimulus,-1,t0,h,N,D,t_N) # Minimum syncytiun (evolves into global minimum)
-b = Runge_Kutta(stimulus,1,t0,h,N,D,t_N) # Max syncytium (evolves into global maximum)
+def multi_run_wrapper(args):
+   return Runge_Kutta(*args)
+if __name__ == "__main__":
+    pool = Pool(4)
+    state1=(stimulus,-1,t0,h,N,D,t_N)
+    state2=(stimulus,0,t0,h,N,D,t_N)
+    state3=(stimulus,1,t0,h,N,D,t_N)
+    results = pool.map(multi_run_wrapper,[state1,state2,state3])
+    pool.close()
+  
+#f_out = Runge_Kutta(stimulus,0,t0,h,N,D,t_N) # Equilibrium
+#a = Runge_Kutta(stimulus,-1,t0,h,N,D,t_N) # Minimum syncytiun (evolves into global minimum)
+#b = Runge_Kutta(stimulus,1,t0,h,N,D,t_N) # Max syncytium (evolves into global maximum)
 
-# Two diffusion layers
-c, c_out = ONtype_norm(stimulus,t0,h,N,D,t_N,a,b) # Lightness filling-in
-d, d_out = OFFtype_norm(t_N,N,a,b,c,stimulus)     # Darkness filling-in
 
-""" What is a percivable lightness increment? """
+## Two diffusion layers
+#c, c_out = ONtype_norm(stimulus,t0,h,N,D,t_N,results[0],results[1]) # Lightness filling-in
+#d, d_out = OFFtype_norm(t_N,N,results[0],results[1],c,stimulus)     # Darkness filling-in
+#
+##""" What is a percivable lightness increment? """
+##
+##""" Keil typically uses ON output as "percept" """
+##
+##""" Plotting """
+#plotter1=c
+#plotter2=d
+#plotter3=b
+#
+#plot_r=[1,50,100,150,200,250]
+#plot_max=0.1
+#
+#f, axarr = plt.pyplot.subplots(2, 6)
+#axarr[0, 0].imshow(plotter1[plot_r[0],:,:], cmap='gray')#,vmin=-plot_max,vmax=plot_max)
+#axarr[0, 1].imshow(plotter1[plot_r[1],:,:], cmap='gray')#,vmin=-plot_max,vmax=plot_max)
+#axarr[0, 2].imshow(plotter1[plot_r[2],:,:], cmap='gray')#,vmin=-plot_max,vmax=plot_max)
+#axarr[0, 3].imshow(plotter1[plot_r[3],:,:], cmap='gray')#,vmin=-plot_max,vmax=plot_max)
+#axarr[0, 4].imshow(plotter1[plot_r[4],:,:], cmap='gray')#,vmin=-plot_max,vmax=plot_max)
+#axarr[0, 5].imshow(plotter1[plot_r[5],:,:], cmap='gray')#,vmin=-plot_max,vmax=plot_max)
+#
+#axarr[1, 0].imshow(plotter2[plot_r[0],:,:], cmap='gray')#,vmin=-plot_max,vmax=plot_max)
+#axarr[1, 1].imshow(plotter2[plot_r[1],:,:], cmap='gray')#,vmin=-plot_max,vmax=plot_max)
+#axarr[1, 2].imshow(plotter2[plot_r[2],:,:], cmap='gray')#,vmin=-plot_max,vmax=plot_max)
+#axarr[1, 3].imshow(plotter2[plot_r[3],:,:], cmap='gray')#,vmin=-plot_max,vmax=plot_max)
+#axarr[1, 4].imshow(plotter2[plot_r[4],:,:], cmap='gray')#,vmin=-plot_max,vmax=plot_max)
+#axarr[1, 5].imshow(plotter2[plot_r[5],:,:], cmap='gray')#,vmin=-plot_max,vmax=plot_max)
 
-""" Keil typically uses ON output as "percept" """
-
-""" Plotting """
-plotter1=f_out
-plotter2=c
-plotter3=d
-pl_max1=np.max(plotter1)
-pl_max2=np.max(plotter2)
-pl_max3=np.max(plotter3)
-
-f, axarr = plt.pyplot.subplots(2, 6)
-#axarr[0, 0].imshow(plotter1[1,:,:], cmap='gray')#,vmin=0,vmax=pl_max1)
-#axarr[0, 1].imshow(plotter1[10,:,:], cmap='gray')#,vmin=0,vmax=pl_max1)
-#axarr[0, 2].imshow(plotter1[50,:,:], cmap='gray')#,vmin=0,vmax=pl_max1)
-#axarr[0, 3].imshow(plotter1[100,:,:], cmap='gray')#,vmin=0,vmax=pl_max1)
-#axarr[0, 4].imshow(plotter1[200,:,:], cmap='gray')#,vmin=0,vmax=pl_max1)
-#axarr[0, 5].imshow(plotter1[300,:,:], cmap='gray')#,vmin=0,vmax=pl_max1)
-
-axarr[1, 0].imshow(plotter2[50,:,:], cmap='gray')#,vmin=0,vmax=1)
-axarr[1, 1].imshow(plotter2[100,:,:], cmap='gray')#,vmin=0,vmax=1)
-axarr[1, 2].imshow(plotter2[150,:,:], cmap='gray')#,vmin=0,vmax=1)
-axarr[1, 3].imshow(plotter2[200,:,:], cmap='gray')#,vmin=0,vmax=1)
-axarr[1, 4].imshow(plotter2[250,:,:], cmap='gray')#,vmin=0,vmax=1)
-axarr[1, 5].imshow(plotter2[298,:,:], cmap='gray')#,vmin=0,vmax=1)
-
-axarr[0, 0].imshow(plotter3[50,:,:], cmap='gray')#,vmin=0,vmax=1)
-axarr[0, 1].imshow(plotter3[100,:,:], cmap='gray')#,vmin=0,vmax=1)
-axarr[0, 2].imshow(plotter3[150,:,:], cmap='gray')#,vmin=0,vmax=1)
-axarr[0, 3].imshow(plotter3[200,:,:], cmap='gray')#,vmin=0,vmax=1)
-axarr[0, 4].imshow(plotter3[250,:,:], cmap='gray')#,vmin=0,vmax=1)
-axarr[0, 5].imshow(plotter3[298,:,:], cmap='gray')#,vmin=0,vmax=1)
+#axarr[2, 0].imshow(plotter3[plot_r[0],:,:], cmap='gray')#,vmin=0,vmax=1)
+#axarr[2, 1].imshow(plotter3[plot_r[1],:,:], cmap='gray')#,vmin=0,vmax=1)
+#axarr[2, 2].imshow(plotter3[plot_r[2],:,:], cmap='gray')#,vmin=0,vmax=1)
+#axarr[2, 3].imshow(plotter3[plot_r[3],:,:], cmap='gray')#,vmin=0,vmax=1)
+#axarr[2, 4].imshow(plotter3[plot_r[4],:,:], cmap='gray')#,vmin=0,vmax=1)
+#axarr[2, 5].imshow(plotter3[plot_r[5],:,:], cmap='gray')#,vmin=0,vmax=1)
 
 #
 #
