@@ -8,7 +8,7 @@ import numpy as np
 import sympy as sp
 import scipy.ndimage.filters as flt
 #import square_wave
-import matplotlib as plt
+import matplotlib.pyplot as plt
 #import cv2
 from PIL import Image
 from multiprocessing import Pool
@@ -151,48 +151,53 @@ def Runge_Kutta(stimulus,lamda,t0,h,N,D,t_N):
         return f
 
 
-def ONtype_norm(stimulus,t0,h,N,D,t_N,a,b):
+def ONtype_norm(s,t0,h,N,D,t_N,a,b,R,dt=0.001):
     """
-    Dynamic normalization or lightness filling-in
+    Dynamic normalisation or lightness filling-in
+    
+    ISSUE : R (+1) regularisation parameter in steady state solution to buffer NaN
+    
+    Returns
+    --------
+    d     - steady state solution
+    c_out - dynamic solution
     """
-    # steady state solution
+    
     c = np.zeros((t_N,N,N))
     cd_out = np.zeros((t_N,N,N))
-    
+
     for t in np.arange(0,t_N-1):
-        c_1 = np.round((stimulus-a[t,:,:]),1)
-        c_2 = np.round((b[t,:,:]-a[t,:,:]),1)
-        c[t,:,:] =  c_1/c_2
-        
-    #c[np.isinf(c)]=1
-    #c[np.isnan(c)]=1 
+        c[t,:,:] =  (s-a[t,:,:])/(b[t,:,:]-a[t,:,:]+1)
     
-    for t in np.arange(0,t_N-1):
-        cd_out_1 = b[t,:,:]*(np.zeros((N,N))-c[t,:,:])
-        cd_out_2 = a[t,:,:]*(np.ones((N,N))-c[t,:,:])
-        #cd_out_1[np.isinf(cd_out_1)]=1
-        #cd_out_2[np.isinf(cd_out_2)]=1
-        #cd_out_1[np.isnan(cd_out_1)]=1
-        #cd_out_2[np.isnan(cd_out_2)]=1
-        cd_out[t,:,:] = cd_out_1 - cd_out_2 + stimulus      
+        cd_out_1 = b[t,:,:]*(np.zeros((N,N))-cd_out[t,:,:])
+        cd_out_2 = a[t,:,:]*(np.ones((N,N))-cd_out[t,:,:])
+        cd_out[t,:,:] = dt*(cd_out_1 - cd_out_2 + stimulus)    
+    
     return c , cd_out
     
 
-def OFFtype_norm(t_N,N,a,b,c,s):
+def OFFtype_norm(t_N,N,a,b,c,s,R):
     """
-    Inverse dynamic normalization or darkness filling-in
+    Inverse dynamic normalisation or darkness filling-in
+    
+    ISSUE : R (+1) regularisation parameter in steady state solution to buffer NaN    
+    
+    Returns
+    --------
+    d     - steady state solution
+    d_out - dynamic solution
     """
+    
     d = np.zeros((t_N,N,N))
     d_out = np.zeros((t_N,N,N))
     for t in np.arange(0,t_N-1):
-        d[t,:,:] = np.ones((N,N)) - c[t,:,:] #Off       
+        d[t,:,:] = (b[t,:,:] - s) / (b[t,:,:] - a[t,:,:]+R)      
        
-        d_out_1 = b[t,:,:]*c[t,:,:]
-        d_out_2 = a[t,:,:]*(c[t,:,:]-np.ones((N,N)))
+        d_out_1 = b[t,:,:]*(1-d_out[t,:,:])
+        d_out_2 = a[t,:,:]*(np.zeros((N,N))-d_out[t,:,:])
         d_out[t,:,:] = d_out_1 - d_out_2 - s
     return d, d_out
     
-
 
 """ 
 RUN CODE
@@ -205,80 +210,115 @@ h : int     Runga-Kutta integration step h>0
 t0 : int    Stimulus injection times
 tN : int    Length of stimulation
 """
+#if __name__ == "__main__":
 
-# Import jpg image or use square wave stimulus
+# Import jpg image or use square wave stimulus, resize, convert into usable array
 im = Image.open("/home/will/gitrepos/contAdaptTranslation/Documents/whites.jpg").convert('L')
-arr = np.array(im)
-arr=arr/255.
+arr = np.array(im.resize((50,50), Image.ANTIALIAS))
+stimulus=arr/255.
 N=arr.shape[0]
 
-#N = 128
-#stimulus = square_wave.square_wave((1,1), N, 1, 6, mean_lum=.5, period='ignore',start='high')
+# Parameters
+D = 0.01 # Diffusion Coefficient
+h = 1    # Runga-Kutta Step
+t0 = 0   # Start time
+t_N = 500# End time
+R = 1    #regularisation parameter
 
-stimulus = arr[0:N,0:N]
-D = 0.2 # SPEED OF DIFFUSION
-h = 1  
-t0 = 0
-t_N = 500
-
-# Three diffusion behaviour states
 def multi_run_wrapper(args):
    return Runge_Kutta(*args)
-if __name__ == "__main__":
-    pool = Pool(4)
-    state1=(stimulus,-1,t0,h,N,D,t_N)
-    state2=(stimulus,0,t0,h,N,D,t_N)
-    state3=(stimulus,1,t0,h,N,D,t_N)
-    results = pool.map(multi_run_wrapper,[state1,state2,state3])
-    pool.close()
-  
-#f_out = Runge_Kutta(stimulus,0,t0,h,N,D,t_N) # Equilibrium
-#a = Runge_Kutta(stimulus,-1,t0,h,N,D,t_N) # Minimum syncytiun (evolves into global minimum)
-#b = Runge_Kutta(stimulus,1,t0,h,N,D,t_N) # Max syncytium (evolves into global maximum)
+
+# Three diffusion behaviour states
+pool = Pool(4)
+state1=(stimulus,-1,t0,h,N,D,t_N)
+state2=(stimulus,0,t0,h,N,D,t_N)
+state3=(stimulus,1,t0,h,N,D,t_N)
+results = pool.map(multi_run_wrapper,[state1,state2,state3])
+pool.close()
+
+a=results[0]
+b=results[2]
+ss=results[1]
+
+# Two diffusion layers
+c, c_out = ONtype_norm(stimulus,t0,h,N,D,t_N,a,b,1) # Lightness filling-in
+d, d_out = OFFtype_norm(t_N,N,a,b,c,stimulus,1)     # Darkness filling-in
+
+maxval = np.zeros_like(c)
+# Steady-state half-wave-rectify
+S_bright = np.array([c, maxval]).max(axis=0)
+S_dark   = np.array([d, maxval]).max(axis=0)
+
+# Dynamic half-wave-rectify
+S_bright_d = np.array([c_out, maxval]).max(axis=0)
+S_dark_d   = np.array([d_out, maxval]).max(axis=0)
+
+# Perceptual activities
+P = (S_bright-S_dark)/(1+S_bright+S_dark) # Steady-state
+P_d = (S_bright_d-S_dark_d)/(1+S_bright_d+S_dark_d) # Dynamic
+
+""" What is a percivable lightness increment? """
 
 
-## Two diffusion layers
-#c, c_out = ONtype_norm(stimulus,t0,h,N,D,t_N,results[0],results[1]) # Lightness filling-in
-#d, d_out = OFFtype_norm(t_N,N,results[0],results[1],c,stimulus)     # Darkness filling-in
-#
-##""" What is a percivable lightness increment? """
-##
-##""" Keil typically uses ON output as "percept" """
-##
-##""" Plotting """
-#plotter1=c
-#plotter2=d
-#plotter3=b
-#
-#plot_r=[1,50,100,150,200,250]
-#plot_max=0.1
-#
-#f, axarr = plt.pyplot.subplots(2, 6)
-#axarr[0, 0].imshow(plotter1[plot_r[0],:,:], cmap='gray')#,vmin=-plot_max,vmax=plot_max)
-#axarr[0, 1].imshow(plotter1[plot_r[1],:,:], cmap='gray')#,vmin=-plot_max,vmax=plot_max)
-#axarr[0, 2].imshow(plotter1[plot_r[2],:,:], cmap='gray')#,vmin=-plot_max,vmax=plot_max)
-#axarr[0, 3].imshow(plotter1[plot_r[3],:,:], cmap='gray')#,vmin=-plot_max,vmax=plot_max)
-#axarr[0, 4].imshow(plotter1[plot_r[4],:,:], cmap='gray')#,vmin=-plot_max,vmax=plot_max)
-#axarr[0, 5].imshow(plotter1[plot_r[5],:,:], cmap='gray')#,vmin=-plot_max,vmax=plot_max)
-#
-#axarr[1, 0].imshow(plotter2[plot_r[0],:,:], cmap='gray')#,vmin=-plot_max,vmax=plot_max)
-#axarr[1, 1].imshow(plotter2[plot_r[1],:,:], cmap='gray')#,vmin=-plot_max,vmax=plot_max)
-#axarr[1, 2].imshow(plotter2[plot_r[2],:,:], cmap='gray')#,vmin=-plot_max,vmax=plot_max)
-#axarr[1, 3].imshow(plotter2[plot_r[3],:,:], cmap='gray')#,vmin=-plot_max,vmax=plot_max)
-#axarr[1, 4].imshow(plotter2[plot_r[4],:,:], cmap='gray')#,vmin=-plot_max,vmax=plot_max)
-#axarr[1, 5].imshow(plotter2[plot_r[5],:,:], cmap='gray')#,vmin=-plot_max,vmax=plot_max)
 
-#axarr[2, 0].imshow(plotter3[plot_r[0],:,:], cmap='gray')#,vmin=0,vmax=1)
-#axarr[2, 1].imshow(plotter3[plot_r[1],:,:], cmap='gray')#,vmin=0,vmax=1)
-#axarr[2, 2].imshow(plotter3[plot_r[2],:,:], cmap='gray')#,vmin=0,vmax=1)
-#axarr[2, 3].imshow(plotter3[plot_r[3],:,:], cmap='gray')#,vmin=0,vmax=1)
-#axarr[2, 4].imshow(plotter3[plot_r[4],:,:], cmap='gray')#,vmin=0,vmax=1)
-#axarr[2, 5].imshow(plotter3[plot_r[5],:,:], cmap='gray')#,vmin=0,vmax=1)
 
-#
-#
-#""" Numpy to Avi """
 
+
+
+
+""" Plotting of outputs """
+
+# Diffusion state plotter
+plotter1=ss
+plotter2=S_bright
+plotter3=S_bright_d
+
+plot_r=np.arange(1,t_N,50)
+plot_max=0.1
+
+f, axarr = plt.subplots(3, 6)
+axarr[0, 0].imshow(plotter1[plot_r[0],:,:], cmap='gray')
+axarr[0, 1].imshow(plotter1[plot_r[1],:,:], cmap='gray')
+axarr[0, 2].imshow(plotter1[plot_r[2],:,:], cmap='gray')
+axarr[0, 3].imshow(plotter1[plot_r[3],:,:], cmap='gray')
+axarr[0, 4].imshow(plotter1[plot_r[4],:,:], cmap='gray')
+axarr[0, 5].imshow(plotter1[plot_r[5],:,:], cmap='gray')
+
+axarr[1, 0].imshow(plotter2[plot_r[0],:,:], cmap='gray')
+axarr[1, 1].imshow(plotter2[plot_r[1],:,:], cmap='gray')
+axarr[1, 2].imshow(plotter2[plot_r[2],:,:], cmap='gray')
+axarr[1, 3].imshow(plotter2[plot_r[3],:,:], cmap='gray')
+axarr[1, 4].imshow(plotter2[plot_r[4],:,:], cmap='gray')
+axarr[1, 5].imshow(plotter2[plot_r[5],:,:], cmap='gray')
+
+axarr[2, 0].imshow(plotter3[plot_r[0],:,:], cmap='gray')
+axarr[2, 1].imshow(plotter3[plot_r[1],:,:], cmap='gray')
+axarr[2, 2].imshow(plotter3[plot_r[2],:,:], cmap='gray')
+axarr[2, 3].imshow(plotter3[plot_r[3],:,:], cmap='gray')
+axarr[2, 4].imshow(plotter3[plot_r[4],:,:], cmap='gray')
+axarr[2, 5].imshow(plotter3[plot_r[5],:,:], cmap='gray')
+
+# Luminance edge profiler
+plt.figure(2,figsize=[4,13])
+first_line=P[450,8,:]
+second_line=P[450,13,:]
+plt.subplot(3,1,1)
+plt.plot(first_line,'r')
+plt.plot(second_line,'b')
+plt.title('Steady-state solution')
+plt.subplot(3,1,2)
+first_line=P_d[450,8,:]
+second_line=P_d[450,13,:]
+plt.plot(first_line,'r')
+plt.plot(second_line,'b')
+plt.title('Dynamic solution')
+plt.subplot(3,1,3)
+plt.imshow(c[450,:,:],cmap='gray')
+plt.plot(np.arange(0,N,1),np.ones(N)*8,'r')
+plt.plot(np.arange(0,N,1),np.ones(N)*13,'b')
+plt.xlim([0,N])
+plt.ylim([0,N])
+plt.title('Output Percept')
 
 
 #imag = d     # Image array to convert into video file
@@ -316,3 +356,12 @@ if __name__ == "__main__":
 ##ax6.hist(np.reshape(f_out[100,:,:],f_out.shape[1]*f_out.shape[2]),bins=20)
 ##ax6.set_ylim(0,ylim_max)
 ##ax6.set_xlim(0.0,xlim_max)
+
+
+#N = 128
+#stimulus = square_wave.square_wave((1,1), N, 1, 6, mean_lum=.5, period='ignore',start='high')
+
+
+#f_out = Runge_Kutta(stimulus,0,t0,h,N,D,t_N) # Equilibrium
+#a = Runge_Kutta(stimulus,-1,t0,h,N,D,t_N) # Minimum syncytiun (evolves into global minimum)
+#b = Runge_Kutta(stimulus,1,t0,h,N,D,t_N) # Max syncytium (evolves into global maximum)
