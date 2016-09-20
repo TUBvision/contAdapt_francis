@@ -210,11 +210,11 @@ h : int     Runga-Kutta integration step h>0
 t0 : int    Stimulus injection times
 tN : int    Length of stimulation
 """
-#if __name__ == "__main__":
+
 
 # Import jpg image or use square wave stimulus, resize, convert into usable array
 im = Image.open("/home/will/gitrepos/contAdaptTranslation/Documents/whites.jpg").convert('L')
-arr = np.array(im.resize((50,50), Image.ANTIALIAS))
+arr = np.array(im.resize((100,100), Image.ANTIALIAS))
 stimulus=arr/255.
 N=arr.shape[0]
 
@@ -250,12 +250,18 @@ S_bright = np.array([c, maxval]).max(axis=0)
 S_dark   = np.array([d, maxval]).max(axis=0)
 
 # Dynamic half-wave-rectify
-S_bright_d = np.array([c_out, maxval]).max(axis=0)
-S_dark_d   = np.array([d_out, maxval]).max(axis=0)
+S_bright_d = np.array([c_out, maxval]).max(axis=0)*1000
+S_dark_d   = np.array([d_out, maxval]).max(axis=0)*1000
 
 # Perceptual activities
 P = (S_bright-S_dark)/(1+S_bright+S_dark) # Steady-state
 P_d = (S_bright_d-S_dark_d)/(1+S_bright_d+S_dark_d) # Dynamic
+
+# Positive values only
+P  = np.array([P, maxval]).max(axis=0)
+P_d= np.array([P_d, maxval]).max(axis=0)
+
+
 
 """ What is a percivable lightness increment? """
 
@@ -277,26 +283,26 @@ plot_r=np.arange(1,t_N,50)
 plot_max=0.1
 
 f, axarr = plt.subplots(3, 6)
-axarr[0, 0].imshow(plotter1[plot_r[0],:,:], cmap='gray')
-axarr[0, 1].imshow(plotter1[plot_r[1],:,:], cmap='gray')
-axarr[0, 2].imshow(plotter1[plot_r[2],:,:], cmap='gray')
-axarr[0, 3].imshow(plotter1[plot_r[3],:,:], cmap='gray')
-axarr[0, 4].imshow(plotter1[plot_r[4],:,:], cmap='gray')
-axarr[0, 5].imshow(plotter1[plot_r[5],:,:], cmap='gray')
+axarr[0, 0].imshow(plotter1[plot_r[0],:,:], cmap='gray',vmax=1,vmin=0)
+axarr[0, 1].imshow(plotter1[plot_r[1],:,:], cmap='gray',vmax=1,vmin=0)
+axarr[0, 2].imshow(plotter1[plot_r[2],:,:], cmap='gray',vmax=1,vmin=0)
+axarr[0, 3].imshow(plotter1[plot_r[3],:,:], cmap='gray',vmax=1,vmin=0)
+axarr[0, 4].imshow(plotter1[plot_r[4],:,:], cmap='gray',vmax=1,vmin=0)
+axarr[0, 5].imshow(plotter1[plot_r[5],:,:], cmap='gray',vmax=1,vmin=0)
 
-axarr[1, 0].imshow(plotter2[plot_r[0],:,:], cmap='gray')
-axarr[1, 1].imshow(plotter2[plot_r[1],:,:], cmap='gray')
-axarr[1, 2].imshow(plotter2[plot_r[2],:,:], cmap='gray')
-axarr[1, 3].imshow(plotter2[plot_r[3],:,:], cmap='gray')
-axarr[1, 4].imshow(plotter2[plot_r[4],:,:], cmap='gray')
-axarr[1, 5].imshow(plotter2[plot_r[5],:,:], cmap='gray')
+axarr[1, 0].imshow(plotter2[plot_r[0],:,:], cmap='gray',vmax=1,vmin=0)
+axarr[1, 1].imshow(plotter2[plot_r[1],:,:], cmap='gray',vmax=1,vmin=0)
+axarr[1, 2].imshow(plotter2[plot_r[2],:,:], cmap='gray',vmax=1,vmin=0)
+axarr[1, 3].imshow(plotter2[plot_r[3],:,:], cmap='gray',vmax=1,vmin=0)
+axarr[1, 4].imshow(plotter2[plot_r[4],:,:], cmap='gray',vmax=1,vmin=0)
+axarr[1, 5].imshow(plotter2[plot_r[5],:,:], cmap='gray',vmax=1,vmin=0)
 
-axarr[2, 0].imshow(plotter3[plot_r[0],:,:], cmap='gray')
-axarr[2, 1].imshow(plotter3[plot_r[1],:,:], cmap='gray')
-axarr[2, 2].imshow(plotter3[plot_r[2],:,:], cmap='gray')
-axarr[2, 3].imshow(plotter3[plot_r[3],:,:], cmap='gray')
-axarr[2, 4].imshow(plotter3[plot_r[4],:,:], cmap='gray')
-axarr[2, 5].imshow(plotter3[plot_r[5],:,:], cmap='gray')
+axarr[2, 0].imshow(plotter3[plot_r[0],:,:], cmap='gray',vmax=1,vmin=0)
+axarr[2, 1].imshow(plotter3[plot_r[1],:,:], cmap='gray',vmax=1,vmin=0)
+axarr[2, 2].imshow(plotter3[plot_r[2],:,:], cmap='gray',vmax=1,vmin=0)
+axarr[2, 3].imshow(plotter3[plot_r[3],:,:], cmap='gray',vmax=1,vmin=0)
+axarr[2, 4].imshow(plotter3[plot_r[4],:,:], cmap='gray',vmax=1,vmin=0)
+axarr[2, 5].imshow(plotter3[plot_r[5],:,:], cmap='gray',vmax=1,vmin=0)
 
 # Luminance edge profiler
 plt.figure(2,figsize=[4,13])
