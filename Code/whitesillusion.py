@@ -87,11 +87,11 @@ def square_wave(shape, ppd, contrast, frequency, mean_lum=.5, period='ignore',
                       for j in range(0, shape[1], pixels_per_cycle)
                       if i + j < shape[1]]
     stim[:, index] = low if start is 'low' else high
-    return stim
+    return stim, diff
 
 
 def whites_illusion_bmcc(shape, ppd, contrast, frequency, mean_lum=.5,
-        patch_height=None, start='high', sep=1):
+        patch_height=None, start='high', sep=1,diffuse='n'):
     """
     Create a version of White's illusion on a square wave, in the style used by
     Blakeslee and McCourt (1999).
@@ -128,7 +128,7 @@ def whites_illusion_bmcc(shape, ppd, contrast, frequency, mean_lum=.5,
     the White effect, simultaneous brightness contrast and grating induction.
     Vision research 39(26):4361-77.
     """
-    stim = square_wave(shape, ppd, contrast, frequency, mean_lum, 'full',
+    stim,diff = square_wave(shape, ppd, contrast, frequency, mean_lum, 'full',
                         start)
     half_cycle = int(degrees_to_pixels(1. / frequency / 2, ppd) + .5)
     if patch_height is None:
@@ -136,12 +136,37 @@ def whites_illusion_bmcc(shape, ppd, contrast, frequency, mean_lum=.5,
     else:
         patch_height = degrees_to_pixels(patch_height, ppd)
     y_pos = (stim.shape[0] - patch_height) // 2
-    stim[y_pos: -y_pos,
-         stim.shape[1] / 2 - (sep + 1) * half_cycle:
-            stim.shape[1] / 2 - sep * half_cycle] = mean_lum
-    stim[y_pos: -y_pos,
-         stim.shape[1] / 2 + sep * half_cycle:
-            stim.shape[1] / 2 + (sep + 1) * half_cycle] = mean_lum
+
+    if diffuse == 'n':
+        stim[y_pos: -y_pos, stim.shape[1] / 2 - (sep + 1) * half_cycle: stim.shape[1] / 2 - sep * half_cycle] = mean_lum
+        stim[y_pos: -y_pos, stim.shape[1] / 2 + sep * half_cycle: stim.shape[1] / 2 + (sep + 1) * half_cycle] = mean_lum
+        
+    elif diffuse == 'y':
+        p = np.round(0.25*patch_height)
+        L_0 = mean_lum+diff # maximum lightness
+        L_1 = mean_lum-diff# minimum lightness
+        
+        # Array for holding x axis coordinates
+        LEFT=np.arange(stim.shape[1] / 2 - (sep + 1) * half_cycle, stim.shape[1] / 2 - sep * half_cycle)
+        RIGHT=np.arange(stim.shape[1] / 2 + sep * half_cycle, stim.shape[1] / 2 + (sep + 1) * half_cycle)
+        
+        # Place test patches
+        stim[y_pos: -y_pos, LEFT] = mean_lum
+        stim[y_pos: -y_pos, RIGHT] = mean_lum
+        
+        # Upper diffuse edges
+        for A in np.arange(y_pos+p,y_pos-p,-1):
+            stim[A, LEFT ] = 0.5*(L_1+(L_1*((A-y_pos)/p))) + 0.5*(mean_lum+(mean_lum*((-A+y_pos)/p))) + 0.1
+            stim[A, RIGHT] = 0.5*(L_0+(L_0*((A-y_pos)/p))) + 0.5*(mean_lum+(mean_lum*((-A+y_pos)/p))) - 0.1
+        
+        # Lower diffuse edges
+        for A in np.arange(-y_pos+p,-y_pos-p,-1):
+            stim[A, LEFT]  = 0.5*(L_0+(L_0*((A+y_pos)/p))) + 0.5*(mean_lum+(mean_lum*((-A-y_pos)/p)))# + 0.1
+            stim[A, RIGHT] = 0.5*(L_1+(L_1*((A+y_pos)/p))) + 0.5*(mean_lum+(mean_lum*((-A-y_pos)/p)))# - 0.1
+
+    else:
+        print "Incorrect diffuse type y/n only"
+        
     return stim
 
 def contours_white_bmmc(shape, ppd, contrast, frequency, mean_lum=.5,
@@ -301,11 +326,10 @@ def contours_white_bmmc(shape, ppd, contrast, frequency, mean_lum=.5,
 
 
 
-def evaluate(patch_h,direction):
+def evaluate(patch_h,direction,diffuse,contrast_f):
     gray=127
     #contrast_f = 5/245 # contrast differences used by g.francis model dark/light
-    contrast_f = 0.05 # torsten contrast
-    stim = whites_illusion_bmcc((2,2),100,contrast_f,2,patch_height=patch_h)*255
+    stim = whites_illusion_bmcc((2,2),100,contrast_f,2,patch_height=patch_h,diffuse='y')*255
     if direction == 'h': # horizontal bars
         mask_dark,mask_bright = contours_white_bmmc((2,2),100,1,2,mean_lum=gray/2,contour_width=2,patch_height=patch_h,orientation='horizontal')
     elif direction == 'v': # vertical bars
@@ -327,12 +351,12 @@ def evaluate(patch_h,direction):
 
 ####### Testing Code for Printing Output for different cases #######
 
-stim,mask_dark_supdep,mask_bright_supdep=evaluate(0.25,'t')
-import matplotlib.pyplot as plt
-fig, (ax1,ax2,ax3) = plt.subplots(ncols=3, figsize=(10,3))
-ax1.imshow(stim,cmap='gray')
-ax2.imshow(mask_dark_supdep,cmap='gray')
-ax3.imshow(mask_bright_supdep,cmap='gray')
+#stim,mask_dark_supdep,mask_bright_supdep=evaluate(0.25,'t')
+#import matplotlib.pyplot as plt
+#fig, (ax1,ax2,ax3) = plt.subplots(ncols=3, figsize=(10,3))
+#ax1.imshow(stim,cmap='gray')
+#ax2.imshow(mask_dark_supdep,cmap='gray')
+#ax3.imshow(mask_bright_supdep,cmap='gray')
 
 #stim,mask_dark_v,mask_bright_v=evaluate(0.25,'v')
 #

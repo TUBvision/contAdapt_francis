@@ -8,7 +8,7 @@ import os
 os.chdir("/home/will/gitrepos/contAdaptTranslation/Code")
 import structCAN
 mst=structCAN.CANNEM()
-mst.evaluate(11,patch_h=0.25,direction='s',noise=3.00)
+mst.evaluate(11,patch_h=0.25,direction='s',noise=0,diffuse='y',contrast_f=0.2)
 
 """
 noise mask - Options: [0.11,0.19,0.33,0.58,1.00,1.73,3.00,5.20,9.00] (0 if none)

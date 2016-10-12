@@ -121,7 +121,7 @@ class CANNEM(object):
                      self.timeCount=0
                      
                      
-    def evaluate(self,condition,patch_h=1,direction='v',noise=0):
+    def evaluate(self,condition,patch_h=1,direction='v',noise=0,diffuse='n',contrast_f=0.05):
         """
         - Kernels are made
         - Simulation begins in 'time' for loop
@@ -131,6 +131,8 @@ class CANNEM(object):
         self.condition = condition        
         self.patch_h = patch_h
         self.direction = direction
+        self.diffuse = diffuse
+        self.contrast_f = contrast_f
         self.LGNkernels(2*np.log(2), 10, .5, .5, 2, 1.75, 0.5)
         print "Simulation condition : ", self.Conditions[condition]
         for time in np.arange(self.startTime, self.stopTime+self.timeStep, self.timeStep):
@@ -660,7 +662,7 @@ class CANNEM(object):
         
         if condition == 11: #Whites illusion
             self.startInputImage = np.ones((self.i_x, self.i_y))*self.gray
-            stim, mask_dark, mask_bright = wi.evaluate(self.patch_h,self.direction)
+            stim, mask_dark, mask_bright = wi.evaluate(self.patch_h,self.direction,self.diffuse,self.contrast_f)
             if time< self.testOnset: # Show adaptors (mask)
                 if self.adaptorColorChange == self.gray:
                     self.startInputImage= mask_bright
@@ -1081,30 +1083,30 @@ class CANNEM(object):
           
         
         # Convert values in the color FIDOs to something that can be presented in an image
-        S_rgmax = np.max(np.max(np.abs(self.S_rg[:,:])))
-        S_bymax = np.max(np.max(np.abs(self.S_by[:,:])))
-        S_wbmax = np.max(np.max(np.abs(self.S_wb[:,:])))
-        S_max1  = np.maximum(S_rgmax, S_bymax)
-        S_max   = np.maximum(S_max1 , S_wbmax)
+        #S_rgmax = np.max(np.max(np.abs(self.S_rg[:,:])))
+        #S_bymax = np.max(np.max(np.abs(self.S_by[:,:])))
+        #S_wbmax = np.max(np.max(np.abs(self.S_wb[:,:])))
+        #S_max1  = np.maximum(S_rgmax, S_bymax)
+        #S_max   = np.maximum(S_max1 , S_wbmax)
         
         # Convert FIDO values to self.self.rgB values (relative to self.graself.y and maximum FIDO value)
-        S_rgb = ConvertOpponentColortoRGB(self.S_rg[:,:], self.S_by[:,:], self.S_wb[:,:], self.gray, S_max)
+        #S_rgb = ConvertOpponentColortoRGB(self.S_rg[:,:], self.S_by[:,:], self.S_wb[:,:], self.gray, S_max)
         # scale to 0 to 255 self.self.rgB values
-        temp = 255.0* (S_rgb[:,:,0]/np.max(np.max(np.max(S_rgb))))
+        #temp = 255.0* (S_rgb[:,:,0]/np.max(np.max(np.max(S_rgb))))
         
         # Make image of input, boundaries, and filled-in values to save as a png file
-        self.thing = np.ones((self.i_x, 3*self.i_y, 3))
+        self.thing = np.ones((self.i_x, self.i_y, 3))
         
         # Input image on left (Participant Image)
         self.thing[:,0:self.i_y,:]=self.inputImage/255
         
         # Filled-in values on right (Computer Image)
-        self.thing[:,2*self.i_y:3*self.i_y,0]=temp/255 
-        self.thing[:,2*self.i_y:3*self.i_y,1]=temp/255  
-        self.thing[:,2*self.i_y:3*self.i_y,2]=temp/255
+        #self.thing[:,2*self.i_y:3*self.i_y,0]=temp/255 
+        #self.thing[:,2*self.i_y:3*self.i_y,1]=temp/255  
+        #self.thing[:,2*self.i_y:3*self.i_y,2]=temp/255
         
         # Boundaries in center (Boundarself.y Image)
-        self.thing[:,self.i_y:2*self.i_y,:]=self.orientedImage # +1 removed from self.y start SPLINT
+        #self.thing[:,self.i_y:2*self.i_y,:]=self.orientedImage # +1 removed from self.y start SPLINT
         
         # Write individual frame files (with leading zero if less than 10)
         if self.timeCount>=10:

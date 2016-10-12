@@ -257,10 +257,10 @@ t_N = 500 # End time = (Length of stimulation)
 R = 1     # Regularisation parameter
 
 # Import jpg image or use square wave stimulus
-im = Image.open("/home/will/gitrepos/contAdaptTranslation/Documents/whites.jpg").convert('L')
+im = Image.open("/home/will/gitrepos/contAdaptTranslation/Documents/rs.png").convert('L')
 
 # Resizing image (smaller) increases speed (but reduces accuracy)
-arr = np.array(im.resize((100,100), Image.ANTIALIAS))
+arr = np.array(im.resize((400,400), Image.ANTIALIAS))
 
 # Scale down from grey to binary scale
 stimulus=arr/255.
@@ -355,20 +355,23 @@ axarr[2, 4].imshow(plotter3[plot_r[4],:,:], cmap='gray')#,vmax=1,vmin=0)
 axarr[2, 5].imshow(plotter3[plot_r[5],:,:], cmap='gray')#,vmax=1,vmin=0)
 
 # Luminance edge profiler
-plt.figure(2,figsize=[4,13])
+plt.figure(2)#,figsize=[4,13])
+plt.subplot(1,4,1)
+plt.imshow(stimulus,cmap='gray')
+plt.title('Input')
 first_line=P[450,8,:]
 second_line=P[450,13,:]
-plt.subplot(3,1,1)
+plt.subplot(1,4,2)
 plt.plot(first_line,'r')
 plt.plot(second_line,'b')
 plt.title('Steady-state solution')
-plt.subplot(3,1,2)
+plt.subplot(1,4,3)
 first_line=P_d[450,8,:]
 second_line=P_d[450,13,:]
 plt.plot(first_line,'r')
 plt.plot(second_line,'b')
 plt.title('Dynamic solution')
-plt.subplot(3,1,3)
+plt.subplot(1,4,4)
 plt.imshow(c[450,:,:],cmap='gray')
 plt.plot(np.arange(0,N,1),np.ones(N)*8,'r')
 plt.plot(np.arange(0,N,1),np.ones(N)*13,'b')
