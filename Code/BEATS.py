@@ -130,7 +130,7 @@ def Dirac_delta_test(tester):
     else:
         return 1
 
-def Solve_diff_eq_RK4(stimulus,lamda,t0,h,N,D,t_N):
+def Solve_diff_eq_RK4(stimulus,lamda,t0,h,D,t_N):
     """
     Finds a solution to the linear and spatially discrete diffusion equation:
     
@@ -157,7 +157,7 @@ def Solve_diff_eq_RK4(stimulus,lamda,t0,h,N,D,t_N):
     f : array_like          computed diffused array
     
     """
-    f = np.zeros((t_N+1,N,N)) #[time, equal shape space dimension]
+    f = np.zeros((t_N+1,stimulus.shape[0],stimulus.shape[1])) #[time, equal shape space dimension]
     t = np.zeros(t_N+1)
     
     if lamda ==0:
@@ -191,7 +191,7 @@ def Solve_diff_eq_RK4(stimulus,lamda,t0,h,N,D,t_N):
         return f
 
 
-def ONtype_norm(s,t0,h,N,D,t_N,a,b,R,dt=1):
+def ONtype_norm(s,t0,h,D,t_N,a,b,R,dt=1):
     """
     Dynamic normalisation or lightness filling-in
     ---------------------------------------------------------------------------
@@ -208,20 +208,20 @@ def ONtype_norm(s,t0,h,N,D,t_N,a,b,R,dt=1):
     c_out - dynamic solution
     """
     
-    c = np.zeros((t_N,N,N))
-    cd_out = np.zeros((t_N,N,N))
+    c = np.zeros((t_N,a.shape[1],a.shape[2]))
+    cd_out = np.zeros((t_N,a.shape[1],a.shape[2]))
 
     for t in np.arange(0,t_N-1):
         c[t,:,:] =  (s-a[t,:,:])/(b[t,:,:]-a[t,:,:]+R)
     
-        cd_out_1 = b[t,:,:]*(np.zeros((N,N))-cd_out[t,:,:])
-        cd_out_2 = a[t,:,:]*(np.ones((N,N))-cd_out[t,:,:])
-        cd_out[t,:,:] = dt*(cd_out_1 - cd_out_2 + stimulus)    
+        cd_out_1 = b[t,:,:]*(np.zeros((a.shape[1],a.shape[2]))-cd_out[t,:,:])
+        cd_out_2 = a[t,:,:]*(np.ones((a.shape[1],a.shape[2]))-cd_out[t,:,:])
+        cd_out[t,:,:] = dt*(cd_out_1 - cd_out_2 + s)    
     
     return c , cd_out
     
 
-def OFFtype_norm(t_N,N,a,b,c,s,R,dt=1):
+def OFFtype_norm(t_N,a,b,c,s,R,dt=1):
     """
     Inverse dynamic normalisation or darkness filling-in
     --------------------------------------------------------------------------
@@ -235,13 +235,13 @@ def OFFtype_norm(t_N,N,a,b,c,s,R,dt=1):
     d_out - dynamic solution
     """
     
-    d = np.zeros((t_N,N,N))
-    d_out = np.zeros((t_N,N,N))
+    d = np.zeros((t_N,a.shape[1],a.shape[2]))
+    d_out = np.zeros((t_N,a.shape[1],a.shape[2]))
     for t in np.arange(0,t_N-1):
         d[t,:,:] = (b[t,:,:] - s) / (b[t,:,:] - a[t,:,:]+R)      
        
-        d_out_1 = b[t,:,:]*(np.ones((N,N))-d_out[t,:,:])
-        d_out_2 = a[t,:,:]*(np.zeros((N,N))-d_out[t,:,:])
+        d_out_1 = b[t,:,:]*(np.ones((a.shape[1],a.shape[2]))-d_out[t,:,:])
+        d_out_2 = a[t,:,:]*(np.zeros((a.shape[1],a.shape[2]))-d_out[t,:,:])
         d_out[t,:,:] = dt*(d_out_1 - d_out_2 - s)
     return d, d_out
     
@@ -257,16 +257,19 @@ t_N = 500 # End time = (Length of stimulation)
 R = 1     # Regularisation parameter
 
 # Import jpg image or use square wave stimulus
-im = Image.open("/home/will/gitrepos/contAdaptTranslation/Documents/rs.png").convert('L')
+filename = "whites"
+im = Image.open(("{0}{1}{2}".format("/home/will/gitrepos/contAdaptTranslation/Documents/",filename,".jpg"))).convert('L')
 
 # Resizing image (smaller) increases speed (but reduces accuracy)
-arr = np.array(im.resize((400,400), Image.ANTIALIAS))
+f_reduce = 4 # reduction factor
+arr = np.array(im.resize((im.size[0]/f_reduce,im.size[1]/f_reduce), Image.ANTIALIAS))
+#arr = np.array(im)
 
 # Scale down from grey to binary scale
 stimulus=arr/255.
 
 #convert into usable array
-N=arr.shape[0]
+N=stimulus.shape[0]
 
 """
 To increase code speed, multiple processors are run simultaneously with different
@@ -277,9 +280,9 @@ def multi_run_wrapper(args):
 
 # Three diffusion behaviour states
 pool = Pool(4) # Open 4 processors available on this computer into Pools
-state1=(stimulus,-1,t0,h,N,D,t_N)
-state2=(stimulus,0,t0,h,N,D,t_N)
-state3=(stimulus,1,t0,h,N,D,t_N)
+state1=(stimulus,-1,t0,h,D,t_N)
+state2=(stimulus,0,t0,h,D,t_N)
+state3=(stimulus,1,t0,h,D,t_N)
 results = pool.map(multi_run_wrapper,[state1,state2,state3])
 pool.close()
 
@@ -289,8 +292,8 @@ b=results[2]  # maximum growth state of diffusion
 ss=results[1] # steady-state diffusion
 
 # Two diffusion layers converging to normalized image 
-c, c_out = ONtype_norm(stimulus,t0,h,N,D,t_N,a,b,1) # Lightness filling-in
-d, d_out = OFFtype_norm(t_N,N,a,b,c,stimulus,1)     # Darkness filling-in
+c, c_out = ONtype_norm(stimulus,t0,h,D,t_N,a,b,1) # Lightness filling-in
+d, d_out = OFFtype_norm(t_N,a,b,c,stimulus,1)     # Darkness filling-in
 
 maxval = np.zeros_like(c)
 
@@ -354,29 +357,45 @@ axarr[2, 3].imshow(plotter3[plot_r[3],:,:], cmap='gray')#,vmax=1,vmin=0)
 axarr[2, 4].imshow(plotter3[plot_r[4],:,:], cmap='gray')#,vmax=1,vmin=0)
 axarr[2, 5].imshow(plotter3[plot_r[5],:,:], cmap='gray')#,vmax=1,vmin=0)
 
+
 # Luminance edge profiler
-plt.figure(2)#,figsize=[4,13])
+first=8
+second=13
+third=30
+
+plt.figure(filename)#,figsize=[4,13])
+
 plt.subplot(1,4,1)
 plt.imshow(stimulus,cmap='gray')
 plt.title('Input')
-first_line=P[450,8,:]
-second_line=P[450,13,:]
+
 plt.subplot(1,4,2)
+first_line=P[450,first,:]
+second_line=P[450,second,:]
+third_line=P[450,third,:]
 plt.plot(first_line,'r')
 plt.plot(second_line,'b')
+plt.plot(third_line,'g')
 plt.title('Steady-state solution')
+plt.ylim([0.7,1])
+
 plt.subplot(1,4,3)
-first_line=P_d[450,8,:]
-second_line=P_d[450,13,:]
+first_line=P_d[450,first,:]
+second_line=P_d[450,second,:]
+third_line=P_d[450,third,:]
 plt.plot(first_line,'r')
 plt.plot(second_line,'b')
+plt.plot(third_line,'g')
 plt.title('Dynamic solution')
+plt.ylim([0.7,1])
+
 plt.subplot(1,4,4)
-plt.imshow(c[450,:,:],cmap='gray')
-plt.plot(np.arange(0,N,1),np.ones(N)*8,'r')
-plt.plot(np.arange(0,N,1),np.ones(N)*13,'b')
-plt.xlim([0,N])
-plt.ylim([0,N])
+plt.imshow(P[450,:,:],cmap='gray')
+plt.plot(np.arange(0,P.shape[2],1),np.ones(P.shape[2])*first,'r')
+plt.plot(np.arange(0,P.shape[2],1),np.ones(P.shape[2])*second,'b')
+plt.plot(np.arange(0,P.shape[2],1),np.ones(P.shape[2])*third,'g')
+plt.xlim([0,P.shape[2]])
+plt.ylim([0,P.shape[1]])
 plt.title('Output Percept')
 
 

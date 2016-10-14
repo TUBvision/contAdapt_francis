@@ -140,7 +140,7 @@ def whites_illusion_bmcc(shape, ppd, contrast, frequency, mean_lum=.5,
     if diffuse == 'n':
         stim[y_pos: -y_pos, stim.shape[1] / 2 - (sep + 1) * half_cycle: stim.shape[1] / 2 - sep * half_cycle] = mean_lum
         stim[y_pos: -y_pos, stim.shape[1] / 2 + sep * half_cycle: stim.shape[1] / 2 + (sep + 1) * half_cycle] = mean_lum
-        
+    
     elif diffuse == 'y':
         p = np.round(0.25*patch_height)
         L_0 = mean_lum+diff # maximum lightness

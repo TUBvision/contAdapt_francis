@@ -22,7 +22,7 @@ from scipy.ndimage.filters import convolve
 from scipy.ndimage.measurements import mean as labeled_mean
 import whitesillusion as wi
     
-class CANNEM(object):
+class base(object):
 
     """ 
     Contour Adaptation Neural NEtwork Model- CANNEM
@@ -31,8 +31,8 @@ class CANNEM(object):
     
     Basic usage:
     >>> cd "containing Folder"
-    >>> import structCAN
-    >>> mst=structCAN.CANNEM() # create instance of CANNEM
+    >>> import CANNEM
+    >>> mst=CANNEM.base()      # create instance of CANNEM
     >>> mst.evaluate(0)        # run model for stimulus '0'
     
     Note:
@@ -102,11 +102,11 @@ class CANNEM(object):
                       'Annuli', 'Incomplete', 'Robinson-deSa2013', 
                       'Robinson-deSa2012-E1', 'Robinson-deSa2012-E2', 'Prediction','Whites-Illusion'],
                  timeStep = 0.1, # Set timing Parameters (seconds)
-                 stopTime = 8, # seconds 6 for A&G conditions - makes for 4 second adaptation
-                 testOnset = 8 - 2,
+                 # seconds 6 for A&G conditions - makes for 4 second adaptation
+                 
                  ):
                      self.startTime = timeStep
-                     self.testOnset = stopTime - 2
+                     self.timeStep = timeStep
                      self.nOrient = K/2
                      self.gray=gray
                      self.i_x = i_x
@@ -114,14 +114,11 @@ class CANNEM(object):
                      self.inI=inI
                      self.K=K
                      self.Conditions=Conditions
-                     self.timeStep=timeStep
-                     self.stopTime=stopTime
-                     self.testOnset=testOnset
                      # Initiate time sequence 
                      self.timeCount=0
                      
                      
-    def evaluate(self,condition,patch_h=1,direction='v',noise=0,diffuse='n',contrast_f=0.05):
+    def evaluate(self,condition,patch_h=1,direction='v',noise=0,diffuse='n',contrast_f=0.05, stopTime = 8 ,testOnset = 6):
         """
         - Kernels are made
         - Simulation begins in 'time' for loop
@@ -133,6 +130,8 @@ class CANNEM(object):
         self.direction = direction
         self.diffuse = diffuse
         self.contrast_f = contrast_f
+        self.stopTime=stopTime
+        self.testOnset=testOnset
         self.LGNkernels(2*np.log(2), 10, .5, .5, 2, 1.75, 0.5)
         print "Simulation condition : ", self.Conditions[condition]
         for time in np.arange(self.startTime, self.stopTime+self.timeStep, self.timeStep):
