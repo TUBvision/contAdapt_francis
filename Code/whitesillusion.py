@@ -91,7 +91,7 @@ def square_wave(shape, ppd, contrast, frequency, mean_lum=.5, period='ignore',
 
 
 def whites_illusion_bmcc(shape, ppd, contrast, frequency, mean_lum=.5,
-        patch_height=None, start='high', sep=1,diffuse='n'):
+        patch_height=None, start='high', sep=1,typ='norm'):
     """
     Create a version of White's illusion on a square wave, in the style used by
     Blakeslee and McCourt (1999).
@@ -137,11 +137,11 @@ def whites_illusion_bmcc(shape, ppd, contrast, frequency, mean_lum=.5,
         patch_height = degrees_to_pixels(patch_height, ppd)
     y_pos = (stim.shape[0] - patch_height) // 2
 
-    if diffuse == 'n':
+    if typ == 'norm':
         stim[y_pos: -y_pos, stim.shape[1] / 2 - (sep + 1) * half_cycle: stim.shape[1] / 2 - sep * half_cycle] = mean_lum
         stim[y_pos: -y_pos, stim.shape[1] / 2 + sep * half_cycle: stim.shape[1] / 2 + (sep + 1) * half_cycle] = mean_lum
     
-    elif diffuse == 'y':
+    elif typ == 'diffuse':
         p = np.round(0.25*patch_height)
         L_0 = mean_lum+diff # maximum lightness
         L_1 = mean_lum-diff# minimum lightness
@@ -163,6 +163,16 @@ def whites_illusion_bmcc(shape, ppd, contrast, frequency, mean_lum=.5,
         for A in np.arange(-y_pos+p,-y_pos-p,-1):
             stim[A, LEFT]  = 0.5*(L_0+(L_0*((A+y_pos)/p))) + 0.5*(mean_lum+(mean_lum*((-A-y_pos)/p)))# + 0.1
             stim[A, RIGHT] = 0.5*(L_1+(L_1*((A+y_pos)/p))) + 0.5*(mean_lum+(mean_lum*((-A-y_pos)/p)))# - 0.1
+        
+    elif typ == 'inner':
+        stim[y_pos: -y_pos, stim.shape[1] / 2 - (sep + 1) * half_cycle: stim.shape[1] / 2 - sep * half_cycle] = mean_lum
+        stim[y_pos: -y_pos, stim.shape[1] / 2 + sep * half_cycle: stim.shape[1] / 2 + (sep + 1) * half_cycle] = mean_lum
+        
+        # Create inner test patch
+        brd=patch_height/3. # step border for innner check
+        inc = contrast/4    # incremental step difference
+        stim[y_pos+brd: -y_pos-brd, stim.shape[1] / 2 - (sep + 1) * half_cycle +brd: stim.shape[1] / 2 - sep * half_cycle-brd] = mean_lum+inc
+        stim[y_pos+brd: -y_pos-brd, stim.shape[1] / 2 + sep * half_cycle +brd: stim.shape[1] / 2 + (sep + 1) * half_cycle-brd] = mean_lum+inc
 
     else:
         print "Incorrect diffuse type y/n only"
@@ -326,10 +336,10 @@ def contours_white_bmmc(shape, ppd, contrast, frequency, mean_lum=.5,
 
 
 
-def evaluate(patch_h,direction,diffuse,contrast_f):
+def evaluate(patch_h,direction,typ,contrast_f):
     gray=127
     #contrast_f = 5/245 # contrast differences used by g.francis model dark/light
-    stim = whites_illusion_bmcc((2,2),100,contrast_f,2,patch_height=patch_h,diffuse='y')*255
+    stim = whites_illusion_bmcc((2,2),100,contrast_f,2,patch_height=patch_h,typ=typ)*255
     if direction == 'h': # horizontal bars
         mask_dark,mask_bright = contours_white_bmmc((2,2),100,1,2,mean_lum=gray/2,contour_width=2,patch_height=patch_h,orientation='horizontal')
     elif direction == 'v': # vertical bars

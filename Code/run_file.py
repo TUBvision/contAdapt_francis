@@ -1,20 +1,35 @@
 # -*- coding: utf-8 -*-
 """
-This is a runfile for the structCAN model - Francis-Grossberg Model applied to 
-common pyscophysical visual stimuli, extended for White's Illusion.
+This is a runfile for the CANNEM model - Francis-Grossberg Model applied to 
+common pyschophysical visual stimuli, extended for White's Illusion.
 
+Default : evaluate(condition, patch_h = 1, direction = 'v', noise = 0,
+                   diffuse = 'n', contrast_f = 0.05, stopTime = 8 ,testOnset = 6)
+                   
 Parameters 
--------------------------------------------------------------------------------
-Default:
-------------------------------------------------------------------------------
-evaluate(condition, patch_h = 1, direction = 'v', noise = 0, diffuse = 'n',
-         contrast_f = 0.05, stopTime = 8 ,testOnset = 6)
 -------------------------------------------------------------------------------        
-direction  - determines the direction of the adapters on White's Illusion
-diffuse    - determines whether the edges in WI are diffuse 
-patch_H    - height of test patch in WI
+patch_h    - Height of test patch in WI {default = 0.25}
 noise mask - Options: [0.11,0.19,0.33,0.58,1.00,1.73,3.00,5.20,9.00] (0 if none)
 contrast_f - contrast between dark and light stripes
+typ        - Type of test patch (White's Illusion only)
+
+                string from : ['norm','diffuse','inner']
+                - Normal equiluminant test patches
+                - Test patch with diffuse horizontal edges
+                - Test patch with incremental inner patch
+
+direction  - Location of flashing adapters (White's Illusion only)
+
+                string from : ['h','v','s','t','both']
+                - Horizontal bars immediate edges
+                - Vertical bars immediate edges
+                - Vertical "surround suppression" edges
+                - T-junction adapters
+                - Horizontal and Vertical immediate edges
+                
+t_S        - Full length of output GIF
+testOnset  - Onset of stimulus, post adaptation
+
 -------------------------------------------------------------------------------
 """
 import os
@@ -23,26 +38,28 @@ import imageio
 import numpy as np
 import CANNEM
 
+# Length of simulation
+t_S = 8
+
 # Set current folder to save images into
-resultsDirectory= "/home/will/gitrepos/contAdaptTranslation/Code/Image_Outputs"
+resultsDirectory= "/home/will/Documents/Git_Repository/contAdapt_francis/Code/Image_Outputs"
 os.chdir(resultsDirectory)
 
 # Run model
 inst=CANNEM.base()
-t_S=8
-t_O=6
-inst.evaluate(11,patch_h=0.25,direction='s', noise=0, diffuse='n', contrast_f=0.2,stopTime=t_S,testOnset=t_O)
+inst.evaluate(11, patch_h=0.25, direction='s', noise=0, typ='inner', contrast_f=0.2, stopTime=t_S, testOnset=6)
 
 # Compile images into GIF
 N = t_S*10 # number of images
 images=[]
+resultsDirectory= "/home/will/Documents/Git_Repository/contAdapt_francis/Code/Image_Outputs"
 for i in np.arange(1,N):
     if i < 10:
         images.append(np.array(Image.open(("{0}{1}{2}{3}".format(resultsDirectory,'/All0',i,".png"))).convert('L'))/255.)
     else:
         images.append(np.array(Image.open(("{0}{1}{2}{3}".format(resultsDirectory,'/All',i,".png"))).convert('L'))/255.)
 
-filename = "{0}{1}".format(resultsDirectory,"/test.gif")
+filename = "{0}{1}".format(resultsDirectory,"/inner.gif")
 
 imageio.mimsave(filename, images,duration=0.1)
 
@@ -51,8 +68,7 @@ imageio.mimsave(filename, images,duration=0.1)
 """
 TO DO
 ----------------
-Define duration of stimuli above (onset etc)
-Explicit oise mask creation
+Explicit noise mask creation
 Define direction of diffuse edges in WI
 Contrast only works for 0.2 ........ otherwise incorrect stimuli
 

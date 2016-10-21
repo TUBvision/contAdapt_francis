@@ -118,7 +118,7 @@ class base(object):
                      self.timeCount=0
                      
                      
-    def evaluate(self,condition,patch_h=1,direction='v',noise=0,diffuse='n',contrast_f=0.05, stopTime = 8 ,testOnset = 6):
+    def evaluate(self,condition,patch_h=1,direction='v',noise=0,typ='norm',contrast_f=0.05, stopTime = 8 ,testOnset = 6):
         """
         - Kernels are made
         - Simulation begins in 'time' for loop
@@ -128,7 +128,7 @@ class base(object):
         self.condition = condition        
         self.patch_h = patch_h
         self.direction = direction
-        self.diffuse = diffuse
+        self.typ = typ
         self.contrast_f = contrast_f
         self.stopTime=stopTime
         self.testOnset=testOnset
@@ -661,7 +661,7 @@ class base(object):
         
         if condition == 11: #Whites illusion
             self.startInputImage = np.ones((self.i_x, self.i_y))*self.gray
-            stim, mask_dark, mask_bright = wi.evaluate(self.patch_h,self.direction,self.diffuse,self.contrast_f)
+            stim, mask_dark, mask_bright = wi.evaluate(self.patch_h,self.direction,self.typ,self.contrast_f)
             if time< self.testOnset: # Show adaptors (mask)
                 if self.adaptorColorChange == self.gray:
                     self.startInputImage= mask_bright
