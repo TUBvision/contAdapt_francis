@@ -47,7 +47,7 @@ os.chdir(resultsDirectory)
 
 # Run model
 inst=CANNEM.base()
-inst.evaluate(11, patch_h=0.25, direction='s', noise=0, typ='inner', contrast_f=0.2, stopTime=t_S, testOnset=6)
+inst.evaluate(11, patch_h=0.25, direction='v', noise=0, typ='inner', contrast_f=0.1, stopTime=t_S, testOnset=6)
 
 # Compile images into GIF
 N = t_S*10 # number of images
@@ -59,34 +59,16 @@ for i in np.arange(1,N):
     else:
         images.append(np.array(Image.open(("{0}{1}{2}{3}".format(resultsDirectory,'/All',i,".png"))).convert('L'))/255.)
 
-filename = "{0}{1}".format(resultsDirectory,"/inner.gif")
+filename = "{0}{1}".format(resultsDirectory,"/inner_v.gif")
 
 imageio.mimsave(filename, images,duration=0.1)
 
 
 
 """
-TO DO
-----------------
-Explicit noise mask creation
-Define direction of diffuse edges in WI
-Contrast only works for 0.2 ........ otherwise incorrect stimuli
-
-"""
-
-
-
-
-
-
-
-
-
-
-"""
------------------------------
-Alternative Gif making method
------------------------------
+----------------------------------------------
+Alternative, Non-automated Gif making method
+----------------------------------------------
 From the commnand line, go to the directory with the images e.g.
 
 "cd /home/will/gitrepos/contAdaptTranslation/Code/Image_Outputs"

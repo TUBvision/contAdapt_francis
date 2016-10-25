@@ -2,6 +2,12 @@
 """
 Created on Mon Jan  4 11:06:15 2016
 
+Currently, not working. GenSpec2 has infinite whileloop.
+Step my step comparison with Matlab required. 
+That means running python on TUB machine, and matlan on Laptop,
+simultaneously.
+
+
 @author: will
 """
 import numpy as np
@@ -296,35 +302,41 @@ def FreqFilt(n,low,high,IG,PR,EO,OnOff):
 generate 25 noise masks at all frequencies for model testing. only first 5
 are required for psychophysical experiment.
 
-"""
-rang = np.arange(-np.log2(9),np.log2(9),np.log2(9)/4)
-rang = np.round(2**(rang)*100)/100
-#for noise_freq in np.round(2**(rang)*100)/100 :
-noise_freq = rang[2]
-if noise_freq > 2:
-    noise_max = .43
-    noise_min = -.43
-else:
-    noise_max = .4
-    noise_min = -.4
+Component functions
+--------------------
+narrowband_noise - band pass filtered white noise
+GenSpec2         - not sure yet
+FreqFilt         - Generates a spectrum of bandpass/reject filter (POWER, not amplitude)
 
+"""
+# Parameters
 ppd = 31.2770941620795
 mask_size = 512
+
+
+
+rang = np.arange(-np.log2(9),np.log2(9),np.log2(9)/4)
+rang = np.round(2**(rang)*100)/100
+for noise_freq in np.round(2**(rang)*100)/100 :
+    noise_freq = rang[2]
+    if noise_freq > 2:
+        noise_max = .43
+        noise_min = -.43
+    else:
+        noise_max = .4
+        noise_min = -.4
+
+
  
       
 k = 2 #in range(25):
 #noise = narrowband_noise(noise_freq, mask_size, ppd, .2, noise_max, noise_min)
-#sc.save("..\noise\noise%i_%.3fppd_%.3f_%.3f.mat" % ( mask_size, ppd, noise_freq, k), 'noise')
-
-
 freq=noise_freq
-mask_size=512
-ppd=31.277
 noiseRms=0.2
-max_noise=0.4
-min_noise=-0.4
-    
-   
+max_noise=noise_max
+min_noise=noise_min
+
+
 # noisemask parameters
 frequency = 2./3. * freq / ppd * mask_size # low cut off spatial frequency in cycles/image width (sf bandwidth is 1 oct) (image width = noise mask)
 
@@ -339,25 +351,71 @@ const = noiseRms*nn**2/(np.sqrt(np.sum(f**2)))
 max_val = 2
 min_val = -2
 
-values_min = [0]
-values_max = [0]
 # Create noisemask until the extreme values are within desired range
-while max_val > max_noise or min_val < min_noise:
-    s = GenSpec2(nn)
-    sf = s*f*const
-    fsf = np.fft.fftshift(sf)
-    Y = np.fft.ifft2(fsf)
-    noisemask = np.real(Y)
-    # we need to divide the noise mask by two to achieve the same contrast
-    # level that Salmela and Laurinen call RMS contrast, because their RMS
-    # contrast is normalized by mean luminance, which is 0.5
-    noisemask = noisemask / 2
-    if nn != mask_size:
-        noisemask = noisemask[0:mask_size, 0:mask_size]
-    
-    max_val = np.max(noisemask)
-    min_val = np.min(noisemask)
-    
-    values_min.append(min_val)
-    values_max.append(max_val)
+#while max_val > max_noise or min_val < min_noise:
+#
+#    s = GenSpec2(nn)
+#    sf = s*f*const
+#    fsf = np.fft.fftshift(sf)
+#    Y = np.fft.ifft2(fsf)
+#    noisemask = np.real(Y)
+#    # we need to divide the noise mask by two to achieve the same contrast
+#    # level that Salmela and Laurinen call RMS contrast, because their RMS
+#    # contrast is normalized by mean luminance, which is 0.5
+#    noisemask = noisemask / 2
+#    if nn != mask_size:
+#        noisemask = noisemask[0:mask_size, 0:mask_size]
+#    
+#    max_val = np.max(noisemask[:])
+#    min_val = np.min(noisemask[:])
+#    print(1)
+
+
+#sc.save("..\noise\noise%i_%.3fppd_%.3f_%.3f.mat" % ( mask_size, ppd, noise_freq, k), 'noise')
+
+#
+#freq=noise_freq
+#mask_size=512
+#ppd=31.277
+#noiseRms=0.2
+#max_noise=0.4
+#min_noise=-0.4
+#    
+#   
+## noisemask parameters
+#frequency = 2./3. * freq / ppd * mask_size # low cut off spatial frequency in cycles/image width (sf bandwidth is 1 oct) (image width = noise mask)
+#
+#nn = 2**np.ceil(np.log2(mask_size))
+#
+## Create noise mask
+#f = FreqFilt(nn,frequency,frequency*2,'G','P','E','+')
+#
+#const = noiseRms*nn**2/(np.sqrt(np.sum(f**2)))
+#
+## Create random noise mask
+#max_val = 2
+#min_val = -2
+#
+#
+## Create noisemask until the extreme values are within desired range
+#values_min = [0]
+#values_max = [0]
+#while max_val > max_noise or min_val < min_noise:
+#    s = GenSpec2(nn)
+#    sf = s*f*const
+#    fsf = np.fft.fftshift(sf)
+#    Y = np.fft.ifft2(fsf)
+#    noisemask = np.real(Y)
+#    # we need to divide the noise mask by two to achieve the same contrast
+#    # level that Salmela and Laurinen call RMS contrast, because their RMS
+#    # contrast is normalized by mean luminance, which is 0.5
+#    noisemask = noisemask / 2
+#    if nn != mask_size:
+#        noisemask = noisemask[0:mask_size, 0:mask_size]
+#    
+#    max_val = np.max(noisemask)
+#    min_val = np.min(noisemask)
+#    
+#    values_min.append(min_val)
+#    values_max.append(max_val)
 

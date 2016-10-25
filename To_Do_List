@@ -1,0 +1,41 @@
+Developments
+------------------
+- Email from Alejandro
+Same effects produced? Absolute lightness difference? 
+Unsupervised algorithm learns two frequency bands -> used to estimate scene reflectance-illumination
+-> averaged spectral range (gaussian) created -> convolved with original image -> feedback systems
+-> output images
+- Increased complexity of WI stimuli, included blurred edges, and inner patches
+So far no particularly interesting results.
+- Automated GIF generation in CANNEM model
+- RENTIX Model?
+- Remaking Noisemask generators to apply to models
+
+
+
+To Do List TUB
+-------------------
+- Noisemask generators, requires better understanding of explicity DOG bandwidth defintion.
+
+This can also be achieved by profiling the original noisemask code in tandem written by
+Torsten in MATLAB. However, DOG filters are thought to be physiologically plausible, therefore
+it's worth working on this much cleaner noise mask generator for experience with this 
+type of processing. After these are made, and the spatial frequency ranges of the noise masks
+are with ranges used with the experiments on noise masking, then they will be applied to 
+the models to test how they react, and where there is a specificity to their noise depedence
+as observed in one of torsten & mariannes papers.
+
+
+- Define direction of diffuse edges in WI
+
+This is relatively exploratory and without firm theoretical underpinnings, but I want to look 
+at how diffuse edges in WI will effect immediate perception of the illusion as well as how the
+various models deal with diffuse edges in their computations.
+
+
+- BUG Contrast only works for 0.2 ........ otherwise incorrect stimuli
+
+
+
+
+
