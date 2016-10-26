@@ -39,7 +39,8 @@ import numpy as np
 import CANNEM
 
 # Length of simulation
-t_S = 8
+t_S = 10
+contrast = 0.1
 
 # Set current folder to save images into
 resultsDirectory= "/home/will/Documents/Git_Repository/contAdapt_francis/Code/Image_Outputs"
@@ -47,19 +48,19 @@ os.chdir(resultsDirectory)
 
 # Run model
 inst=CANNEM.base()
-inst.evaluate(11, patch_h=0.25, direction='v', noise=0, typ='inner', contrast_f=0.1, stopTime=t_S, testOnset=6)
+inst.evaluate(11, patch_h=0.25, direction='s', noise=0, typ='diffuse', contrast_f=contrast, stopTime=t_S, testOnset=6)
 
 # Compile images into GIF
 N = t_S*10 # number of images
 images=[]
-resultsDirectory= "/home/will/Documents/Git_Repository/contAdapt_francis/Code/Image_Outputs"
+resultsDirectory= "/home/will/Documents/Git_Repository/contAdapt_francis/Code/Image_Outputs/Image_Outputs"
 for i in np.arange(1,N):
     if i < 10:
         images.append(np.array(Image.open(("{0}{1}{2}{3}".format(resultsDirectory,'/All0',i,".png"))).convert('L'))/255.)
     else:
         images.append(np.array(Image.open(("{0}{1}{2}{3}".format(resultsDirectory,'/All',i,".png"))).convert('L'))/255.)
 
-filename = "{0}{1}".format(resultsDirectory,"/inner_v.gif")
+filename = "{0}{1}{2}{3}".format(resultsDirectory,"/",contrast,"_diffuse_s.gif")
 
 imageio.mimsave(filename, images,duration=0.1)
 

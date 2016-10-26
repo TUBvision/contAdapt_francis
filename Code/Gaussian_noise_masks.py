@@ -76,102 +76,82 @@ def conv2(x,y,mode='same'):
 
     return z
 
-
+def size_to_cpd(S,D):
+    """
+    Convert size of image to cycles per degree
+    
+    Parameters
+    ----------    
+    S : Size of image (same units)
+    D : Distance from image (same units)
+    
+    Returns
+    ----------
+    V : visual angle 
+    
+    """
+    return 1/(2*np.arctan(S/(2*D)))
+    
 # Create white noise array
 N=50 # Noise array dimension
 A=10 # Noise amplitude
 noise = np.random.rand(N,N)*A
 
 # Gaussian Noise paramerers
-GCenter=[0,0]
+GCenter=[2,2]
 Gconst=1
 
 # First gaussian filter
-cutoff_f1 = 0.05 # < pi/10
+cutoff_f1 = 0.2 # < pi/10
 gamma1 = 1/(2*np.pi*cutoff_f1) #minimum gamma == 0.5
 Gamp1 = 1/(2*np.pi*gamma1)
 filtr1 = Gaussian2D([0,0],Gamp1,gamma1,Gconst)
 # Second gaussian filter
-cutoff_f2 = 0.04 # < pi/10
+cutoff_f2 = 0.5 # < pi/10
 gamma2 = 1/(2*np.pi*cutoff_f2) #minimum gamma == 0.5
 Gamp2 = 1/(2*np.pi*gamma2)
 filtr2 = Gaussian2D([0,0],Gamp2,gamma2,Gconst)
 
-# Convolve filters with noise
-noise_filtr1 = conv2(noise, filtr1, mode='same')
-noise_filtr2 = conv2(noise, filtr2, mode='same')
+# Pad second filter with zeroes to match size of first filter 
+empty = np.zeros(filtr1.shape)
+d_0 = (filtr1.shape[0]-filtr2.shape[0]) / 2
+d_1 = (filtr1.shape[0]-filtr2.shape[0]) / 2
+empty[d_0:-d_0,d_0:-d_0]= filtr2
+filtr2=empty
 
-# Difference of Gaussian Output
-noise_out = noise_filtr1- noise_filtr2
+# Convolve Difference of Gaussian Output with noise
+filtr_out = filtr1-filtr2 
+noise_out = conv2(noise, filtr_out, mode='same')
+
+# Convert to cpd
+#noise_out = size_to_cpd(noise_out,1)
 
 # Take Fourier transform of band pass filtered noise
 fft_noise=np.fft.fftshift(np.fft.fft2(noise))
-fft_filtr1=np.fft.fftshift(np.fft.fft2(filtr1))
-fft_filtr2=np.fft.fftshift(np.fft.fft2(filtr2))
+fft_filtr_out=np.fft.fftshift(np.fft.fft2(filtr_out))
 fft_noise_filtr=np.fft.fftshift(np.fft.fft2(noise_out))
 
-# PLot Fourier outputs
-plt.figure(1)
-plt.subplot(4,2,1)
-plt.plot(filtr1[:,filtr1.shape[1]/2])
-plt.title('filter1')
-plt.subplot(4,2,3)
-plt.plot(filtr2[:,filtr2.shape[1]/2])
-plt.title('filter2')
-plt.subplot(4,2,5)
-plt.plot(noise[:,N/2])
-plt.title('noise')
-plt.subplot(4,2,7)
-plt.plot(noise_out[:,N/2])
-plt.title('noise_filtr')
 
-
-plt.subplot(4,2,2)
-plt.plot(fft_filtr1[:,fft_filtr1.shape[1]/2])
-plt.title('fft_filter1')
-plt.subplot(4,2,4)
-plt.plot(fft_filtr2[:,fft_filtr2.shape[1]/2])
-plt.title('fft_filter2')
-plt.subplot(4,2,6)
-plt.plot(fft_noise[:,N/2])
-plt.title('fft_noise')
-plt.subplot(4,2,8)
-plt.plot(fft_noise_filtr[:,N/2])
-plt.title('fft_noise_filtr')
+# Plot 1D Fourier outputs
+plt.subplot(3,1,1)
+plt.plot(np.abs(fft_filtr_out[0:fft_filtr_out.shape[0]/2,fft_filtr_out.shape[1]/2]))
+plt.title('D.O.G. Spectrum')
+plt.subplot(3,1,2)
+plt.plot(np.abs(fft_noise[0:N/2,N/2]))
+plt.title('Noise Spectrum')
+plt.subplot(3,1,3)
+plt.plot(np.abs(fft_noise_filtr[0:N/2,N/2]))
+plt.title('Filtered Noise Spectrum')
 
 
 ## Plot image outputs
 plt.figure(2)
-plt.subplot(4,2,1)
-plt.imshow(filtr1,cmap='gray')
-plt.title('filter1')
-plt.subplot(4,2,3)
-plt.imshow(filtr2,cmap='gray')
-plt.title('filter2')
-plt.subplot(4,2,5)
+plt.subplot(2,1,1)
 plt.imshow(noise,cmap='gray')
 plt.title('noise')
-plt.subplot(4,2,7)
+plt.subplot(2,1,2)
 plt.imshow(noise_out,cmap='gray')
 plt.title('filtered noise')
-
-plt.subplot(4,2,2)
-plt.imshow(np.abs(fft_filtr1),cmap='gray')
-plt.title('filter')
-plt.subplot(4,2,4)
-plt.imshow(np.abs(fft_filtr2),cmap='gray')
-plt.title('filter2')
-plt.subplot(4,2,6)
-plt.imshow(np.abs(fft_noise),cmap='gray')
-plt.title('noise')
-plt.subplot(4,2,8)
-plt.imshow(np.abs(fft_noise_filtr),cmap='gray')
-plt.title('filtered noise')
-
-
-
-
-
 
 
 # convolve with ODOG for limits

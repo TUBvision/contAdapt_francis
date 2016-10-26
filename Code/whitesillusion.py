@@ -156,8 +156,8 @@ def whites_illusion_bmcc(shape, ppd, contrast, frequency, mean_lum=.5,
         
         # Upper diffuse edges
         for A in np.arange(y_pos+p,y_pos-p,-1):
-            stim[A, LEFT ] = 0.5*(L_1+(L_1*((A-y_pos)/p))) + 0.5*(mean_lum+(mean_lum*((-A+y_pos)/p))) + 0.1
-            stim[A, RIGHT] = 0.5*(L_0+(L_0*((A-y_pos)/p))) + 0.5*(mean_lum+(mean_lum*((-A+y_pos)/p))) - 0.1
+            stim[A, LEFT ] = 0.5*(L_1+(L_1*((A-y_pos)/p))) + 0.5*(mean_lum+(mean_lum*((-A+y_pos)/p))) + contrast/2.
+            stim[A, RIGHT] = 0.5*(L_0+(L_0*((A-y_pos)/p))) + 0.5*(mean_lum+(mean_lum*((-A+y_pos)/p))) - contrast/2.
         
         # Lower diffuse edges
         for A in np.arange(-y_pos+p,-y_pos-p,-1):
