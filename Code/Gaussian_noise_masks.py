@@ -90,19 +90,21 @@ def size_to_cpd(S,D):
     V : visual angle 
     
     """
-    return 1/(2*np.arctan(S/(2*D)))
+    return (2*np.arctan(S/(2*D)))
     
 # Create white noise array
 N=50 # Noise array dimension
-A=10 # Noise amplitude
+A=1 # Noise amplitude
 noise = np.random.rand(N,N)*A
 
+
+
 # Gaussian Noise paramerers
-GCenter=[2,2]
-Gconst=1
+GCenter=[0,0]
+Gconst=0.5 # Magnitude of amplitude filtering (changes gaussian zero point)
 
 # First gaussian filter
-cutoff_f1 = 0.2 # < pi/10
+cutoff_f1 = 0.1 # < pi/10
 gamma1 = 1/(2*np.pi*cutoff_f1) #minimum gamma == 0.5
 Gamp1 = 1/(2*np.pi*gamma1)
 filtr1 = Gaussian2D([0,0],Gamp1,gamma1,Gconst)
@@ -124,23 +126,42 @@ filtr_out = filtr1-filtr2
 noise_out = conv2(noise, filtr_out, mode='same')
 
 # Convert to cpd
-#noise_out = size_to_cpd(noise_out,1)
+# noise_out = size_to_cpd(noise_out,0.1)
+# noise = size_to_cpd(noise,0.1)
 
 # Take Fourier transform of band pass filtered noise
-fft_noise=np.fft.fftshift(np.fft.fft2(noise))
+
+fft_filtr1=np.fft.fftshift(np.fft.fft2(filtr1))
+fft_filtr2=np.fft.fftshift(np.fft.fft2(filtr2))
 fft_filtr_out=np.fft.fftshift(np.fft.fft2(filtr_out))
+fft_noise=np.fft.fftshift(np.fft.fft2(noise))
 fft_noise_filtr=np.fft.fftshift(np.fft.fft2(noise_out))
 
+# Frequency space
+N_filt = filtr1.shape[0]
+nquist_noise = size_to_cpd(N/2,1)
+nquist_filt = size_to_cpd(N_filt/2,1)
+freq_noise = np.linspace(-nquist_noise,nquist_noise,N) # noise frequency space
+freq_filtr = np.linspace(-nquist_filt,nquist_filt,N_filt) # filter frequency space
 
 # Plot 1D Fourier outputs
-plt.subplot(3,1,1)
-plt.plot(np.abs(fft_filtr_out[0:fft_filtr_out.shape[0]/2,fft_filtr_out.shape[1]/2]))
+plt.figure(1)
+plt.subplot(5,1,1)
+plt.plot(freq_filtr[N_filt/2:N_filt-1],np.abs(fft_filtr1[N_filt/2:N_filt-1, N_filt/2]))
+plt.title('filtr1')
+plt.subplot(5,1,2)
+plt.plot(freq_filtr[N_filt/2:N_filt-1],np.abs(fft_filtr2[N_filt/2:N_filt-1, N_filt/2]))
+plt.title('filtr2')
+plt.subplot(5,1,3)
+plt.plot(freq_filtr[N_filt/2:N_filt-1],np.abs(fft_filtr_out[N_filt/2:N_filt-1, N_filt/2]))
 plt.title('D.O.G. Spectrum')
-plt.subplot(3,1,2)
-plt.plot(np.abs(fft_noise[0:N/2,N/2]))
+plt.subplot(5,1,4)
+plt.plot(freq_noise[(N/2)+1:N],np.abs(fft_noise[(N/2)+1:N,N/2]))
+#plt.ylim([0,np.max(np.abs(fft_noise[0:N/2,N/2]))])
 plt.title('Noise Spectrum')
-plt.subplot(3,1,3)
-plt.plot(np.abs(fft_noise_filtr[0:N/2,N/2]))
+plt.subplot(5,1,5)
+plt.plot(freq_noise[(N/2)+1:N],np.abs(fft_noise_filtr[(N/2)+1:N,N/2]))
+#plt.ylim([0,np.max(np.abs(fft_noise[0:N/2,N/2]))])
 plt.title('Filtered Noise Spectrum')
 
 
@@ -153,7 +174,7 @@ plt.subplot(2,1,2)
 plt.imshow(noise_out,cmap='gray')
 plt.title('filtered noise')
 
-
+plt.imshow(filtr_out,cmap='gray')
 # convolve with ODOG for limits
 # min max ranges of freq
 # power of noise (contrast)
