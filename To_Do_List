@@ -7,9 +7,10 @@ Unsupervised algorithm learns two frequency bands -> used to estimate scene refl
 -> output images
 
 - Increased complexity of WI stimuli, included blurred edges, and inner patches
-So far no particularly interesting results.
+So far no particularly interesting results - other types of stimuli?
 
 - Automated GIF generation in CANNEM model
+
 - RENTIX Model?
 
 - Remaking Noisemask generators to apply to models
