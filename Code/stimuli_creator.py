@@ -43,9 +43,9 @@ stopT = 10
 stepT=startT= 0.1
 gray = 127
 patch_h = 0.25
-direction = 's'
-typ = 'diffuse'
-contrast = 0.2
+direction = 'h'
+typ = 'inner'
+contrast = 0.1
 noise = 0
 timeCount = 0
 for time in np.arange(startT,stopT,stepT):
@@ -112,14 +112,14 @@ for time in np.arange(startT,stopT,stepT):
 # Compile images into GIF
 N = stopT*10 # number of images
 images=[]
-resultsDirectory= "/home/will/Documents/Git_Repository/contAdapt_francis/Code/Image_Outputs"
-for i in np.arange(1,N):
+resultsDirectory= "/home/will/gitrepos/contAdaptTranslation/Code/Image_Outputs"
+for i in np.arange(1,N-1):
     if i < 10:
         images.append(np.array(Image.open(("{0}{1}{2}{3}".format(resultsDirectory,'/All0',i,".png"))).convert('L'))/255.)
     else:
         images.append(np.array(Image.open(("{0}{1}{2}{3}".format(resultsDirectory,'/All',i,".png"))).convert('L'))/255.)
 
-filename = "{0}{1}{2}{3}".format(resultsDirectory,"/",contrast,"_diffuse_s.gif")
+filename = "{0}{1}{2}{3}{4}{5}{6}{7}".format(resultsDirectory,"/",contrast,"_",typ,"_",direction,".gif")
 
 imageio.mimsave(filename, images,duration=0.1)
 
@@ -127,4 +127,5 @@ imageio.mimsave(filename, images,duration=0.1)
 IDEAS FOR IMPROVEMENT
 - Don't save images into files, just into an array and then compile into GIF
 - General cleaning up and labelling of parameters
+- Incompatibility between the different conditions, test crossover matching
 """

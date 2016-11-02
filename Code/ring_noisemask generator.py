@@ -61,16 +61,23 @@ def size_to_cpd(S,D):
     
     """
     return (2*np.arctan(S/(2*D)))
+    
 
 # Create white noise array
-N=200 # Noise array dimension
+N=500 # Noise array dimension in pixels
 A=1 # Noise amplitude
 noise = np.random.rand(N,N)*A
 
+# Unit conversion
+ppd = 98.44 # 52.36 Will Laptop
+degrees = N/ppd
+D = 150 # distance to screen
+degrees = size_to_cpd(degrees,D)
+
 # Create ring filter
 a, b = N/2, N/2
-r_1 = 50
-r_2 = 20
+r_1 = 200
+r_2 = 100
 
 y,x = np.ogrid[-a:N-a, -b:N-b]
 mask_1 = x*x + y*y <= r_1*r_1
@@ -81,33 +88,45 @@ mask = mask_1 - mask_2
 fft_noise=np.fft.fftshift(np.fft.fft2(noise))
 
 # Apply ring mask to fft of noise
-fft_noise[mask] = 0
+fft_noise=fft_noise*mask
 
 # Threshold DC term (for plotting)
 fft_plot = np.abs(fft_noise)
-fft_plot[100,100]=0
+fft_plot[N/2,N/2]=0
 
 # Inverse filtered image
 noise_out=np.fft.ifft2(fft_noise)
-noise_out[100,100]=noise_out[100,100]-np.mean(noise_out)
+noise_out[N/2,N/2]=noise_out[N/2,N/2]-np.mean(noise_out)
 
 # Image plotting
-plt.subplot(2,2,1)
-plt.imshow(mask,cmap='gray')
-plt.subplot(2,2,2)
-plt.imshow(noise,cmap='gray')
-plt.subplot(2,2,3)
-plt.imshow(fft_plot,cmap='gray')
-plt.subplot(2,2,4)
+plt.figure(1,figsize=[15,7])
+plt.subplot(1,2,1)
+plt.imshow(fft_plot,cmap='gray',extent=[-2/degrees,2/degrees,-2/degrees,2/degrees])
+plt.title('Fourier combination')
+plt.subplot(1,2,2)
 plt.imshow(np.abs(noise_out),cmap='gray')
+plt.title('Output')
+
 
 """
 Relate radius of the disc in Fourier space to CPD
 -------------------------------------------------
 Convert pixels per degree visual angle (p/d)
 Convert cycles per degree visual angle (V=2*arctan(S/2d)) in radians
--------------------------------------------------
+
+
+Pixel per degree conversion
+---------------------------
 r=100 (ppi)
 d=30
 ppd = 2drtan(0.5) => 52.36
+
+Pixel dimensions
+---------------------------
+UP= (22*25.4) / 1920 
+HOR=(18*25.4) / 1200
+
+To do
+---------------------------
+Include explicit CPD noise band input
 """
