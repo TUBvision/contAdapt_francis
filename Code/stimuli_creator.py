@@ -43,7 +43,7 @@ stopT = 10
 stepT=startT= 0.1
 gray = 127
 patch_h = 0.25
-direction = 'h'
+direction = 'checkers'
 typ = 'inner'
 contrast = 0.1
 noise = 0

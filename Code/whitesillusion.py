@@ -331,6 +331,37 @@ def contours_white_bmmc(shape, ppd, contrast, frequency, mean_lum=.5,
         
         mask_dark[idx_mask] = dark
         mask_bright[idx_mask] = bright
+    elif orientation == 'checker':
+        
+        y_pos=[30,70,40,60]
+        x_pos=[40,60,100,120,30,70,90,130]
+        ph=10
+        
+        # Vertical Bars
+        idx_mask[y_pos[0]-ph: y_pos[0]+ph, x_pos[0] - offset : x_pos[0] + offset] = True
+        idx_mask[y_pos[0]-ph: y_pos[0]+ph, x_pos[1] - offset : x_pos[1] + offset] = True
+        idx_mask[y_pos[0]-ph: y_pos[0]+ph, x_pos[2] - offset : x_pos[2] + offset] = True
+        idx_mask[y_pos[0]-ph: y_pos[0]+ph, x_pos[3] - offset : x_pos[3] + offset] = True
+        
+        idx_mask[y_pos[1]-ph: y_pos[1]+ph, x_pos[0] - offset : x_pos[0] + offset] = True
+        idx_mask[y_pos[1]-ph: y_pos[1]+ph, x_pos[1] - offset : x_pos[1] + offset] = True
+        idx_mask[y_pos[1]-ph: y_pos[1]+ph, x_pos[2] - offset : x_pos[2] + offset] = True
+        idx_mask[y_pos[1]-ph: y_pos[1]+ph, x_pos[3] - offset : x_pos[3] + offset] = True
+        
+        # Horizontal Bars
+        idx_mask[y_pos[2] - offset : y_pos[2] + offset, x_pos[4] -ph: x_pos[4] + ph] = True
+        idx_mask[y_pos[2] - offset : y_pos[2] + offset, x_pos[5] -ph: x_pos[5] + ph] = True
+        idx_mask[y_pos[3] - offset : y_pos[3] + offset, x_pos[4] -ph: x_pos[4] + ph] = True
+        idx_mask[y_pos[3] - offset : y_pos[3] + offset, x_pos[5] -ph: x_pos[5] + ph] = True
+        
+        idx_mask[y_pos[2] - offset : y_pos[2] + offset, x_pos[6] -ph: x_pos[6] + ph] = True
+        idx_mask[y_pos[2] - offset : y_pos[2] + offset, x_pos[7] -ph: x_pos[7] + ph] = True
+        idx_mask[y_pos[3] - offset : y_pos[3] + offset, x_pos[6] -ph: x_pos[6] + ph] = True
+        idx_mask[y_pos[3] - offset : y_pos[3] + offset, x_pos[7] -ph: x_pos[7] + ph] = True
+        
+        mask_dark[idx_mask] = dark
+        mask_bright[idx_mask] = bright
+
     
     return (mask_dark, mask_bright)
 
@@ -354,6 +385,20 @@ def evaluate(patch_h,direction,typ,contrast_f):
         mask_dark_v,mask_bright_v = contours_white_bmmc((2,2),100,1,2,mean_lum=gray/4,contour_width=2,patch_height=patch_h,orientation='vertical')
         mask_dark = mask_dark_h + mask_dark_v
         mask_bright = mask_bright_h + mask_bright_v
+    elif direction == 'checkers':
+        mean_lum=0.5
+        N = 20
+        off = np.zeros((N,N))
+        on=np.ones((N,N))*mean_lum
+        h=4
+        first=np.hstack((h*[on,off]))
+        second=np.hstack((h*[off,on]))
+        checker=np.vstack((first,second,first,second,first))
+        
+        checker[40:60,40:60]=0.1
+        checker[40:60,100:120]=0.1
+        stim = checker
+        mask_dark,mask_bright = contours_white_bmmc(checker.shape,100,1,2,mean_lum=gray,contour_width=2,patch_height=patch_h,orientation='checkers')
     else:
         print "Incorrect reference"
     return stim, mask_dark, mask_bright
