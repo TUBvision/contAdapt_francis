@@ -8,8 +8,8 @@ Created on Thu Nov 17 14:31:25 2016
 import numpy as np
 import matplotlib.pylab as plt
 
-N=20
-mean_lum=0.5
+N=100
+mean_lum=127
 contrast=1
 contour_width=3
 
@@ -21,7 +21,6 @@ first=np.hstack((h*[on,off]))
 second=np.hstack((h*[off,on]))
 checker=np.vstack((first,second,first,second,first))
 
-checker[40:60,40:60]=0.1
 checker[40:60,100:120]=0.1
 
 
@@ -33,10 +32,10 @@ mask_bright = np.ones(shape) * mean_lum
 bright = mean_lum * (1 + contrast)
 dark = mean_lum * (1 - contrast)
 offset = contour_width // 2
-y_pos=[30,70,40,60]#[20,40,60,80]
-x_pos=[40,60,100,120,30,70,90,130]
-hc = 2
-ph=10
+y_pos=[150,350,200,300]
+x_pos=[300,200,500,600,150,350,450,650]
+offset = 5
+ph=55
 
 # Vertical Bars
 idx_mask[y_pos[0]-ph: y_pos[0]+ph, x_pos[0] - offset : x_pos[0] + offset] = True

@@ -216,24 +216,28 @@ def contours_white_bmmc(shape, ppd, contrast, frequency, mean_lum=.5,
             the contour adaptation masks. masks[0] has dark contours, mask[1]
             has bright contours.
     """
-    shape = degrees_to_pixels(np.array(shape), ppd).astype(int)
-    pixels_per_cycle = int(degrees_to_pixels(1. / frequency / 2, ppd) + .5) * 2
-    shape[1] = shape[1] // pixels_per_cycle * pixels_per_cycle
-    # determine pixel width of individual grating bars (half cycle)
-    hc = pixels_per_cycle // 2
-    if patch_height is None:
-        patch_height = shape[0] // 3
+    if orientation == 'checker':
+        shape = shape
     else:
-        patch_height = degrees_to_pixels(patch_height, ppd)
-    y_pos = (shape[0] - patch_height) // 2
-    x_pos = (shape[1] // 2 - (sep + 1) * hc,
-             shape[1] // 2 + sep * hc)
-    mask_dark = np.ones(shape) * mean_lum
-    mask_bright = np.ones(shape) * mean_lum
-    idx_mask = np.zeros(shape, dtype=bool)
-    bright = mean_lum * (1 + contrast)
-    dark = mean_lum * (1 - contrast)
-    offset = contour_width // 2
+        shape = degrees_to_pixels(np.array(shape), ppd).astype(int)
+        pixels_per_cycle = int(degrees_to_pixels(1. / frequency / 2, ppd) + .5) * 2
+        shape[1] = shape[1] // pixels_per_cycle * pixels_per_cycle
+        # determine pixel width of individual grating bars (half cycle)
+        hc = pixels_per_cycle // 2
+        if patch_height is None:
+            patch_height = shape[0] // 3
+        else:
+            patch_height = degrees_to_pixels(patch_height, ppd)
+        y_pos = (shape[0] - patch_height) // 2
+        x_pos = (shape[1] // 2 - (sep + 1) * hc,
+                 shape[1] // 2 + sep * hc)
+        mask_dark = np.ones(shape) * mean_lum
+        mask_bright = np.ones(shape) * mean_lum
+        idx_mask = np.zeros(shape, dtype=bool)
+        bright = mean_lum * (1 + contrast)
+        dark = mean_lum * (1 - contrast)
+        offset = contour_width // 2
+    
     if orientation == 'vertical':
         idx_mask[y_pos: -y_pos, x_pos[0] - offset      : x_pos[0] + offset]      = True
         idx_mask[y_pos: -y_pos, x_pos[0] + hc - offset : x_pos[0] + hc + offset] = True
@@ -333,9 +337,17 @@ def contours_white_bmmc(shape, ppd, contrast, frequency, mean_lum=.5,
         mask_bright[idx_mask] = bright
     elif orientation == 'checker':
         
-        y_pos=[30,70,40,60]
-        x_pos=[40,60,100,120,30,70,90,130]
-        ph=10
+        idx_mask = np.zeros(shape, dtype=bool)
+        mask_dark = np.ones(shape) * mean_lum
+        mask_bright = np.ones(shape) * mean_lum
+        bright = mean_lum * (1 + contrast)
+        dark = mean_lum * (1 - contrast)
+        offset = contour_width // 2        
+        
+        offset = 5
+        y_pos=[150,350,200,300]
+        x_pos=[300,200,500,600,150,350,450,650]
+        ph=55
         
         # Vertical Bars
         idx_mask[y_pos[0]-ph: y_pos[0]+ph, x_pos[0] - offset : x_pos[0] + offset] = True
@@ -351,11 +363,11 @@ def contours_white_bmmc(shape, ppd, contrast, frequency, mean_lum=.5,
         # Horizontal Bars
         idx_mask[y_pos[2] - offset : y_pos[2] + offset, x_pos[4] -ph: x_pos[4] + ph] = True
         idx_mask[y_pos[2] - offset : y_pos[2] + offset, x_pos[5] -ph: x_pos[5] + ph] = True
-        idx_mask[y_pos[3] - offset : y_pos[3] + offset, x_pos[4] -ph: x_pos[4] + ph] = True
-        idx_mask[y_pos[3] - offset : y_pos[3] + offset, x_pos[5] -ph: x_pos[5] + ph] = True
-        
         idx_mask[y_pos[2] - offset : y_pos[2] + offset, x_pos[6] -ph: x_pos[6] + ph] = True
         idx_mask[y_pos[2] - offset : y_pos[2] + offset, x_pos[7] -ph: x_pos[7] + ph] = True
+                
+        idx_mask[y_pos[3] - offset : y_pos[3] + offset, x_pos[4] -ph: x_pos[4] + ph] = True
+        idx_mask[y_pos[3] - offset : y_pos[3] + offset, x_pos[5] -ph: x_pos[5] + ph] = True        
         idx_mask[y_pos[3] - offset : y_pos[3] + offset, x_pos[6] -ph: x_pos[6] + ph] = True
         idx_mask[y_pos[3] - offset : y_pos[3] + offset, x_pos[7] -ph: x_pos[7] + ph] = True
         
@@ -385,20 +397,6 @@ def evaluate(patch_h,direction,typ,contrast_f):
         mask_dark_v,mask_bright_v = contours_white_bmmc((2,2),100,1,2,mean_lum=gray/4,contour_width=2,patch_height=patch_h,orientation='vertical')
         mask_dark = mask_dark_h + mask_dark_v
         mask_bright = mask_bright_h + mask_bright_v
-    elif direction == 'checkers':
-        mean_lum=0.5
-        N = 20
-        off = np.zeros((N,N))
-        on=np.ones((N,N))*mean_lum
-        h=4
-        first=np.hstack((h*[on,off]))
-        second=np.hstack((h*[off,on]))
-        checker=np.vstack((first,second,first,second,first))
-        
-        checker[40:60,40:60]=0.1
-        checker[40:60,100:120]=0.1
-        stim = checker
-        mask_dark,mask_bright = contours_white_bmmc(checker.shape,100,1,2,mean_lum=gray,contour_width=2,patch_height=patch_h,orientation='checkers')
     else:
         print "Incorrect reference"
     return stim, mask_dark, mask_bright
@@ -406,6 +404,11 @@ def evaluate(patch_h,direction,typ,contrast_f):
 
 ####### Testing Code for Printing Output for different cases #######
 
+#shape = (50,80)
+#gray=127
+#d,l=contours_white_bmmc(shape,100,1,2,mean_lum=gray/4,contour_width=0.5,patch_height=None,orientation='checker')
+#import matplotlib.pylab as plt
+#plt.imshow(d,cmap='gray')
 #stim,mask_dark_supdep,mask_bright_supdep=evaluate(0.25,'t')
 #import matplotlib.pyplot as plt
 #fig, (ax1,ax2,ax3) = plt.subplots(ncols=3, figsize=(10,3))

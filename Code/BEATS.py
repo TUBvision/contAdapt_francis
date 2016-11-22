@@ -257,8 +257,8 @@ t_N = 500 # End time = (Length of stimulation)
 R = 1     # Regularisation parameter
 
 # Import jpg image or use square wave stimulus
-filename = "whites"
-im = Image.open(("{0}{1}{2}".format("/home/will/gitrepos/contAdaptTranslation/Documents/",filename,".jpg"))).convert('L')
+filename = "rs"
+im = Image.open(("{0}{1}{2}".format("/home/will/Documents/Git_Repository/contAdapt_francis/Documents/",filename,".png"))).convert('L')
 
 # Resizing image (smaller) increases speed (but reduces accuracy)
 f_reduce = 4 # reduction factor
@@ -397,7 +397,6 @@ plt.plot(np.arange(0,P.shape[2],1),np.ones(P.shape[2])*third,'g')
 plt.xlim([0,P.shape[2]])
 plt.ylim([0,P.shape[1]])
 plt.title('Output Percept')
-
 
 #imag = d     # Image array to convert into video file
 #imag_name = 'd_0.05' # Name of image to be saved to

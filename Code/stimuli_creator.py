@@ -43,11 +43,22 @@ stopT = 10
 stepT=startT= 0.1
 gray = 127
 patch_h = 0.25
-direction = 'checkers'
-typ = 'inner'
+direction = 'checker'
+typ = 'norm'
 contrast = 0.1
 noise = 0
 timeCount = 0
+
+# Checker parameters
+N = 100 # Size of checker box to stack
+h = 4 # Number of checkers stacked
+i_x=500
+i_y=800
+
+shape = (i_x,i_y)
+ppd=5
+g_val=[1.5,1.6,1.7] 
+        
 for time in np.arange(startT,stopT,stepT):
     
     # change adaptor color with each time step to produce flicker
@@ -56,7 +67,23 @@ for time in np.arange(startT,stopT,stepT):
         adaptorColorChange=gray        
     
     startInputImage = np.ones((i_x, i_y))*gray
-    stim, mask_dark, mask_bright = wi.evaluate(patch_h,direction,typ,contrast)
+    if direction == 'checker':
+        off = np.ones((N,N))*gray*g_val[2]
+        on=np.ones((N,N))*gray*g_val[0]
+        # Stack checker boxes to generate checker board
+        first=np.hstack((h*[on,off]))
+        second=np.hstack((h*[off,on]))
+        checker=np.vstack((first,second,first,second,first))
+        # Add same gray checkers to centre points
+        checker[2*N:3*N,2*N:3*N]=gray*g_val[1]
+        checker[2*N:3*N,5*N:6*N]=gray*g_val[1]
+        stim = checker
+        i_x = stim.shape[0]
+        i_y = stim.shape[1]
+        mask_dark,mask_bright = wi.contours_white_bmmc(shape,100,1,2,mean_lum=gray,contour_width=1,patch_height=None,orientation='checker')
+    else:
+        stim, mask_dark, mask_bright = wi.evaluate(patch_h,direction,typ,contrast)
+    
     if time< testOnset: # Show adaptors (mask)
         if adaptorColorChange == gray:
             startInputImage= mask_bright
@@ -65,19 +92,15 @@ for time in np.arange(startT,stopT,stepT):
     else: # Show test stimuli
         startInputImage = stim
 
+
     # fixation markers
     startInputImage[i_x/2-2,i_y/2-2]=255
     startInputImage[i_x/2  ,i_y/2  ]=255
     startInputImage[i_x/2-2,i_y/2  ]=0
     startInputImage[i_x/2  ,i_y/2-2]=0
-    
-    # Add noise
-    #if noise[0] > 0:
-    #    mask1=np.load("{0}{1}{2}{3}{4}{5}{6}".format('/home/will/Documents/noisemasks/noise',noise[1],'_',noise[2],'ppd_',noise[0],'0_5.npy'))
-    #    startInputImage=(mask1[0:200,0:200]*255)+startInputImage    
-              
+
     # Convert RGB input image to red-green, blue-yellow, white-black coordinates
-    inputImage = np.zeros((200,200,3))
+    inputImage = np.zeros((stim.shape[0],stim.shape[1],3))
     inputImage[:,:,0] = startInputImage
     inputImage[:,:,1] = startInputImage
     inputImage[:,:,2] = startInputImage
@@ -112,7 +135,7 @@ for time in np.arange(startT,stopT,stepT):
 # Compile images into GIF
 N = stopT*10 # number of images
 images=[]
-resultsDirectory= "/home/will/gitrepos/contAdaptTranslation/Code/Image_Outputs"
+resultsDirectory= "/home/will/Documents/Git_Repository/contAdapt_francis/Code/Image_Outputs"
 for i in np.arange(1,N-1):
     if i < 10:
         images.append(np.array(Image.open(("{0}{1}{2}{3}".format(resultsDirectory,'/All0',i,".png"))).convert('L'))/255.)
