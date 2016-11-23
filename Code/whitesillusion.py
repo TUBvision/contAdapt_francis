@@ -216,7 +216,7 @@ def contours_white_bmmc(shape, ppd, contrast, frequency, mean_lum=.5,
             the contour adaptation masks. masks[0] has dark contours, mask[1]
             has bright contours.
     """
-    if orientation == 'checker':
+    if orientation == 'checker' or orientation == 'checker_odd':
         shape = shape
     else:
         shape = degrees_to_pixels(np.array(shape), ppd).astype(int)
@@ -373,7 +373,106 @@ def contours_white_bmmc(shape, ppd, contrast, frequency, mean_lum=.5,
         
         mask_dark[idx_mask] = dark
         mask_bright[idx_mask] = bright
+    elif orientation == 'checker_patch':
+        
+        idx_mask = np.zeros(shape, dtype=bool)
+        mask_dark = np.ones(shape) * mean_lum
+        mask_bright = np.ones(shape) * mean_lum
+        bright = mean_lum * (1 + contrast)
+        dark = mean_lum * (1 - contrast)
+        offset = contour_width // 2        
+        
+        offset = 5
+        y_pos=[250,250,200,300]
+        x_pos=[300,200,500,600,250,350,550]
+        ph=205
+        
+        # Vertical bars
+        idx_mask[y_pos[0]-ph: y_pos[0]+ph, x_pos[1] - offset : x_pos[1] + offset] = True
+        idx_mask[y_pos[0]-ph: y_pos[0]+ph, x_pos[3] - offset : x_pos[3] + offset] = True
+        idx_mask[y_pos[1]-ph: y_pos[1]+ph, x_pos[0] - offset : x_pos[0] + offset] = True
+        idx_mask[y_pos[1]-ph: y_pos[1]+ph, x_pos[2] - offset : x_pos[2] + offset] = True
+        
+        # Horizontal Bars
+        idx_mask[y_pos[2] - offset : y_pos[2] + offset, x_pos[4] -ph: x_pos[4] + ph] = True
+        idx_mask[y_pos[3] - offset : y_pos[3] + offset, x_pos[4] -ph: x_pos[4] + ph] = True
+        idx_mask[y_pos[2] - offset : y_pos[2] + offset, x_pos[6] -ph: x_pos[6] + ph] = True
+        idx_mask[y_pos[3] - offset : y_pos[3] + offset, x_pos[6] -ph: x_pos[6] + ph] = True
+        
+        mask_dark[idx_mask] = dark
+        mask_bright[idx_mask] = bright
 
+    elif orientation == 'checker_odd':
+        
+        idx_mask = np.zeros(shape, dtype=bool)
+        mask_dark = np.ones(shape) * mean_lum
+        mask_bright = np.ones(shape) * mean_lum
+        bright = mean_lum * (1 + contrast)
+        dark = mean_lum * (1 - contrast)
+        offset = 5       
+        
+        y_pos=[150,150,200,100]
+        x_pos=[100,200,500,400,150,350,450]
+        ph=55
+        
+        # TOP LEFT
+        # Vertical Bars
+        idx_mask[y_pos[0]-ph: y_pos[0]+ph, x_pos[1] - offset : x_pos[1] + offset] = True
+        idx_mask[y_pos[0]-ph: y_pos[0]+ph, x_pos[3] - offset : x_pos[3] + offset] = True
+        idx_mask[y_pos[1]-ph: y_pos[1]+ph, x_pos[0] - offset : x_pos[0] + offset] = True
+        idx_mask[y_pos[1]-ph: y_pos[1]+ph, x_pos[2] - offset : x_pos[2] + offset] = True
+        # Horizontal Bars
+        idx_mask[y_pos[2] - offset : y_pos[2] + offset, x_pos[4] -ph: x_pos[4] + ph] = True
+        idx_mask[y_pos[3] - offset : y_pos[3] + offset, x_pos[4] -ph: x_pos[4] + ph] = True
+        idx_mask[y_pos[2] - offset : y_pos[2] + offset, x_pos[6] -ph: x_pos[6] + ph] = True
+        idx_mask[y_pos[3] - offset : y_pos[3] + offset, x_pos[6] -ph: x_pos[6] + ph] = True
+        
+        # BOTTOM LEFT
+        y_pos=[350,350,400,300]
+        x_pos=[100,200,500,400,150,350,450]
+        # Vertical Bars
+        idx_mask[y_pos[0]-ph: y_pos[0]+ph, x_pos[1] - offset : x_pos[1] + offset] = True
+        idx_mask[y_pos[0]-ph: y_pos[0]+ph, x_pos[3] - offset : x_pos[3] + offset] = True
+        idx_mask[y_pos[1]-ph: y_pos[1]+ph, x_pos[0] - offset : x_pos[0] + offset] = True
+        idx_mask[y_pos[1]-ph: y_pos[1]+ph, x_pos[2] - offset : x_pos[2] + offset] = True
+        # Horizontal Bars
+        idx_mask[y_pos[2] - offset : y_pos[2] + offset, x_pos[4] -ph: x_pos[4] + ph] = True
+        idx_mask[y_pos[3] - offset : y_pos[3] + offset, x_pos[4] -ph: x_pos[4] + ph] = True
+        idx_mask[y_pos[2] - offset : y_pos[2] + offset, x_pos[6] -ph: x_pos[6] + ph] = True
+        idx_mask[y_pos[3] - offset : y_pos[3] + offset, x_pos[6] -ph: x_pos[6] + ph] = True
+        
+        # BOTTOM RIGHT
+        y_pos=[350,350,400,300]
+        x_pos=[300,400,700,600,350,650,650]
+        # Vertical Bars
+        idx_mask[y_pos[0]-ph: y_pos[0]+ph, x_pos[1] - offset : x_pos[1] + offset] = True
+        idx_mask[y_pos[0]-ph: y_pos[0]+ph, x_pos[3] - offset : x_pos[3] + offset] = True
+        idx_mask[y_pos[1]-ph: y_pos[1]+ph, x_pos[0] - offset : x_pos[0] + offset] = True
+        idx_mask[y_pos[1]-ph: y_pos[1]+ph, x_pos[2] - offset : x_pos[2] + offset] = True
+        # Horizontal Bars
+        idx_mask[y_pos[2] - offset : y_pos[2] + offset, x_pos[4] -ph: x_pos[4] + ph] = True
+        idx_mask[y_pos[3] - offset : y_pos[3] + offset, x_pos[4] -ph: x_pos[4] + ph] = True
+        idx_mask[y_pos[2] - offset : y_pos[2] + offset, x_pos[6] -ph: x_pos[6] + ph] = True
+        idx_mask[y_pos[3] - offset : y_pos[3] + offset, x_pos[6] -ph: x_pos[6] + ph] = True
+        
+        y_pos=[150,150,200,100]
+        x_pos=[300,600,700,400,350,650,650]
+        ph=55
+        # TOP RIGHT
+        # Vertical Bars
+        idx_mask[y_pos[0]-ph: y_pos[0]+ph, x_pos[1] - offset : x_pos[1] + offset] = True
+        idx_mask[y_pos[0]-ph: y_pos[0]+ph, x_pos[3] - offset : x_pos[3] + offset] = True
+        idx_mask[y_pos[1]-ph: y_pos[1]+ph, x_pos[0] - offset : x_pos[0] + offset] = True
+        idx_mask[y_pos[1]-ph: y_pos[1]+ph, x_pos[2] - offset : x_pos[2] + offset] = True
+        # Horizontal Bars
+        idx_mask[y_pos[2] - offset : y_pos[2] + offset, x_pos[4] -ph: x_pos[4] + ph] = True
+        idx_mask[y_pos[3] - offset : y_pos[3] + offset, x_pos[4] -ph: x_pos[4] + ph] = True
+        idx_mask[y_pos[2] - offset : y_pos[2] + offset, x_pos[6] -ph: x_pos[6] + ph] = True
+        idx_mask[y_pos[3] - offset : y_pos[3] + offset, x_pos[6] -ph: x_pos[6] + ph] = True
+        
+        
+        mask_dark[idx_mask] = dark
+        mask_bright[idx_mask] = bright
     
     return (mask_dark, mask_bright)
 

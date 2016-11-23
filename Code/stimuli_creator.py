@@ -43,7 +43,7 @@ stopT = 10
 stepT=startT= 0.1
 gray = 127
 patch_h = 0.25
-direction = 'checker'
+direction = 'checker_odd'
 typ = 'norm'
 contrast = 0.1
 noise = 0
@@ -67,7 +67,7 @@ for time in np.arange(startT,stopT,stepT):
         adaptorColorChange=gray        
     
     startInputImage = np.ones((i_x, i_y))*gray
-    if direction == 'checker':
+    if direction == 'checker' or direction == 'checker_odd':
         off = np.ones((N,N))*gray*g_val[2]
         on=np.ones((N,N))*gray*g_val[0]
         # Stack checker boxes to generate checker board
@@ -80,7 +80,7 @@ for time in np.arange(startT,stopT,stepT):
         stim = checker
         i_x = stim.shape[0]
         i_y = stim.shape[1]
-        mask_dark,mask_bright = wi.contours_white_bmmc(shape,100,1,2,mean_lum=gray,contour_width=1,patch_height=None,orientation='checker')
+        mask_dark,mask_bright = wi.contours_white_bmmc(shape,100,1,2,mean_lum=gray,contour_width=1,patch_height=None,orientation=direction)
     else:
         stim, mask_dark, mask_bright = wi.evaluate(patch_h,direction,typ,contrast)
     
@@ -135,7 +135,7 @@ for time in np.arange(startT,stopT,stepT):
 # Compile images into GIF
 N = stopT*10 # number of images
 images=[]
-resultsDirectory= "/home/will/Documents/Git_Repository/contAdapt_francis/Code/Image_Outputs"
+resultsDirectory= "C:\Users\Will\Documents\gitrepos\contAdapt_francis\Code\Image_Outputs"
 for i in np.arange(1,N-1):
     if i < 10:
         images.append(np.array(Image.open(("{0}{1}{2}{3}".format(resultsDirectory,'/All0',i,".png"))).convert('L'))/255.)
