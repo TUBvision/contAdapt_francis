@@ -5,6 +5,7 @@ Ring noisemask generate for Fourier space filtering
 from scipy.ndimage.filters import convolve
 import numpy as np
 import matplotlib.pylab as plt
+from PIL import Image
 
 def conv2(x,y,mode='same'):
     """
@@ -64,46 +65,74 @@ def size_to_cpd(S,D):
     
 
 # Create white noise array
-N=500 # Noise array dimension in pixels
+N=300 # Noise array dimension in pixels
 A=1 # Noise amplitude
 noise = np.random.rand(N,N)*A
 
-# Unit conversion
-ppd = 98.44 # 52.36 Will Laptop
-degrees = N/ppd
-D = 150 # distance to screen
-degrees = size_to_cpd(degrees,D)
+# Otherwise import jpg image 
+filename = "zebra"
+im = Image.open(("{0}{1}{2}".format("/home/will/Documents/Images/",filename,".png"))).convert('L')
+# Resizing image (smaller) increases speed (but reduces accuracy)
+f_reduce = 1 # reduction factor
+arr = np.array(im.resize((N,N), Image.ANTIALIAS))
+noise = arr
 
-# Create ring filter
+# Create ring filter [approx radius/3 for spatial freq]
 a, b = N/2, N/2
-r_1 = 200
-r_2 = 100
+r_1 = 20 #Outer radius of ring filter 
+r_2 = 1 #Inner radius of ring filter
 
 y,x = np.ogrid[-a:N-a, -b:N-b]
 mask_1 = x*x + y*y <= r_1*r_1
 mask_2 = x*x + y*y <= r_2*r_2
 mask = mask_1 - mask_2
 
+# Inverse mask
+#mask=(mask*-1)+1
+
 # Take Fourier of each component
 fft_noise=np.fft.fftshift(np.fft.fft2(noise))
 
 # Apply ring mask to fft of noise
+fft_noise_un = fft_noise
 fft_noise=fft_noise*mask
 
 # Threshold DC term (for plotting)
 fft_plot = np.abs(fft_noise)
 fft_plot[N/2,N/2]=0
+fft_plot_un = np.abs(fft_noise_un)
+fft_plot_un[N/2,N/2]=0
 
 # Inverse filtered image
 noise_out=np.fft.ifft2(fft_noise)
-noise_out[N/2,N/2]=noise_out[N/2,N/2]-np.mean(noise_out)
+#noise_out[N/2,N/2]=noise_out[N/2,N/2]-np.mean(noise_out) # Threshold DC term
+
+# Convert into cycles per degree visual angle (cm)
+S = 5. # size of image in cm
+D = 15. # distance from image in cm
+V = 2 *np.arctan(S/(2*D))
 
 # Image plotting
-plt.figure(1,figsize=[15,7])
-plt.subplot(1,2,1)
-plt.imshow(fft_plot,cmap='gray',extent=[-2/degrees,2/degrees,-2/degrees,2/degrees])
-plt.title('Fourier combination')
-plt.subplot(1,2,2)
+#plt_limit = 10
+plt.figure(1,figsize=[S,S]) # Width x Heigh in inches
+plt.subplot(2,1,1)
+plt.imshow(np.log(fft_plot_un),cmap='gray')#,extent=[-(N*V)/2,(N*V)/2,-(N*V)/2,(N*V)/2])
+plt.title('Fourier unmasked')
+
+plt.subplot(2,1,2)
+plt.imshow(np.log(fft_plot),cmap='gray',extent=[-(N*V)/2,(N*V)/2,-(N*V)/2,(N*V)/2])
+plt.title('Fourier masked')
+plt.locator_params(axis='x',nbins=10)
+plt.locator_params(axis='y',nbins=10)
+#plt.xlim([-plt_limit,plt_limit])
+#plt.ylim([-plt_limit,plt_limit])
+
+
+plt.figure(2,figsize=[7,7])
+plt.subplot(2,1,1)
+plt.imshow(np.abs(noise),cmap='gray')
+plt.title('Input')
+plt.subplot(2,1,2)
 plt.imshow(np.abs(noise_out),cmap='gray')
 plt.title('Output')
 

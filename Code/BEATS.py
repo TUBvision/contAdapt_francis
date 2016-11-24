@@ -193,7 +193,7 @@ def Solve_diff_eq_RK4(stimulus,lamda,t0,h,D,t_N):
 
 def ONtype_norm(s,t0,h,D,t_N,a,b,R,dt=1):
     """
-    Dynamic normalisation or lightness filling-in
+    Dynamic normalisation or lightness filling-in (luminance increments)
     ---------------------------------------------------------------------------
     Using the previously obtained global min values of the input stimuli
     a lightness diffusion process is used to obtain a normalized image of the 
@@ -223,7 +223,7 @@ def ONtype_norm(s,t0,h,D,t_N,a,b,R,dt=1):
 
 def OFFtype_norm(t_N,a,b,c,s,R,dt=1):
     """
-    Inverse dynamic normalisation or darkness filling-in
+    Inverse dynamic normalisation or darkness filling-in (luminance decrements)
     --------------------------------------------------------------------------
     Same as dynamic normalisation, but opposite.
     
@@ -240,8 +240,8 @@ def OFFtype_norm(t_N,a,b,c,s,R,dt=1):
     for t in np.arange(0,t_N-1):
         d[t,:,:] = (b[t,:,:] - s) / (b[t,:,:] - a[t,:,:]+R)      
        
-        d_out_1 = b[t,:,:]*(np.ones((a.shape[1],a.shape[2]))-d_out[t,:,:])
-        d_out_2 = a[t,:,:]*(np.zeros((a.shape[1],a.shape[2]))-d_out[t,:,:])
+        d_out_1 = b[t,:,:]*(np.zeros((a.shape[1],a.shape[2]))-d_out[t,:,:])
+        d_out_2 = a[t,:,:]*(np.ones((a.shape[1],a.shape[2]))-d_out[t,:,:])
         d_out[t,:,:] = dt*(d_out_1 - d_out_2 - s)
     return d, d_out
     
@@ -258,7 +258,7 @@ R = 1     # Regularisation parameter
 
 # Import jpg image or use square wave stimulus
 filename = "rs"
-im = Image.open(("{0}{1}{2}".format("/home/will/Documents/Git_Repository/contAdapt_francis/Documents/",filename,".png"))).convert('L')
+im = Image.open(("{0}{1}{2}".format("/home/will/gitrepos/contAdaptTranslation/Documents/",filename,".png"))).convert('L')
 
 # Resizing image (smaller) increases speed (but reduces accuracy)
 f_reduce = 4 # reduction factor
@@ -362,35 +362,36 @@ axarr[2, 5].imshow(plotter3[plot_r[5],:,:], cmap='gray')#,vmax=1,vmin=0)
 first=8
 second=13
 third=30
-
+t = 20 # State of process
+gray = stimulus[30,20]
 plt.figure(filename)#,figsize=[4,13])
 
 plt.subplot(1,4,1)
-plt.imshow(stimulus,cmap='gray')
+plt.imshow(stimulus,cmap='gray', vmin=0,vmax=1)
 plt.title('Input')
 
 plt.subplot(1,4,2)
-first_line=P[450,first,:]
-second_line=P[450,second,:]
-third_line=P[450,third,:]
+first_line=P[t,first,:]
+second_line=P[t,second,:]
+third_line=P[t,third,:]
 plt.plot(first_line,'r')
 plt.plot(second_line,'b')
 plt.plot(third_line,'g')
 plt.title('Steady-state solution')
-plt.ylim([0.7,1])
+#plt.ylim([0.7,1])
 
 plt.subplot(1,4,3)
-first_line=P_d[450,first,:]
-second_line=P_d[450,second,:]
-third_line=P_d[450,third,:]
+first_line=P_d[t,first,:]
+second_line=P_d[t,second,:]
+third_line=P_d[t,third,:]
 plt.plot(first_line,'r')
 plt.plot(second_line,'b')
 plt.plot(third_line,'g')
 plt.title('Dynamic solution')
-plt.ylim([0.7,1])
+#plt.ylim([0.7,1])
 
 plt.subplot(1,4,4)
-plt.imshow(P[450,:,:],cmap='gray')
+plt.imshow(P[t,:,:],cmap='gray', vmin=0,vmax=1)
 plt.plot(np.arange(0,P.shape[2],1),np.ones(P.shape[2])*first,'r')
 plt.plot(np.arange(0,P.shape[2],1),np.ones(P.shape[2])*second,'b')
 plt.plot(np.arange(0,P.shape[2],1),np.ones(P.shape[2])*third,'g')
