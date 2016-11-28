@@ -9,9 +9,9 @@ Unsupervised algorithm learns two frequency bands -> used to estimate scene refl
 - Increased complexity of WI stimuli, included blurred edges, and inner patches
 So far no particularly interesting results - other types of stimuli?
 
-- Automated GIF generation in CANNEM model
+- Context Adaptation in Checkboard Stimuli to observe changes in test patch lightness
 
-- RENTIX Model?
+- Automated GIF generation in CANNEM model
 
 - Remaking Noisemask generators to apply to models
 how to relate D.O.G. bandwidth to spectral frequency. Gaussians not ideal. Explicitly filter whitenoise
@@ -24,6 +24,12 @@ rather than through a filter?
 
 To Do List TUB
 -------------------
+- Further develop understanding of Keil's BEATS model
+
+Where does the lightness change observed come from in the code? Can we reverse it?
+
+
+
 - Noisemask generators, requires better understanding of explicity DOG bandwidth defintion.
 
 This can also be achieved by profiling the original noisemask code in tandem written by
@@ -33,6 +39,8 @@ type of processing. After these are made, and the spatial frequency ranges of th
 are with ranges used with the experiments on noise masking, then they will be applied to 
 the models to test how they react, and where there is a specificity to their noise depedence
 as observed in one of torsten & mariannes papers.
+Better but still needs development. Exactly how width of filter equates to spatial frequency.
+Could try to define simple binary type stimuli of known spatial frequency and then try to filter them.....
 
 
 - Define direction of diffuse edges in WI
