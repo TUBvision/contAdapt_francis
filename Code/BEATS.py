@@ -253,12 +253,12 @@ Here is the code to run
 D = 0.01  # Diffusion Coefficient
 h = 1     # Runga-Kutta Step
 t0 = 0    # Start time
-t_N = 500 # End time = (Length of stimulation)
+t_N = 100 # End time = (Length of stimulation)
 R = 1     # Regularisation parameter
 
 # Import jpg image or use square wave stimulus
 filename = "rs"
-im = Image.open(("{0}{1}{2}".format("/home/will/Documents/Git_Repository/contAdapt_francis/Documents/",filename,".png"))).convert('L')
+im = Image.open(("{0}{1}{2}".format("C:\Users\Will\Documents\gitrepos\contAdapt_francis\Documents\\",filename,".png"))).convert('L')
 
 # Resizing image (smaller) increases speed (but reduces accuracy)
 f_reduce = 4 # reduction factor
@@ -295,6 +295,9 @@ ss=results[1] # steady-state diffusion
 c, c_out = ONtype_norm(stimulus,t0,h,D,t_N,a,b,1) # Lightness filling-in
 d, d_out = OFFtype_norm(t_N,a,b,c,stimulus,1)     # Darkness filling-in
 
+
+# END OF DYNAMIC NORMALIZATION NETWORK
+
 maxval = np.zeros_like(c)
 
 
@@ -327,76 +330,76 @@ P_d = (S_bright_d-S_dark_d)/(1+S_bright_d+S_dark_d) # Dynamic
 
 """ Plotting of outputs """
 
-# Diffusion state plotter
-plotter1=ss
-plotter2=S_bright
-plotter3=S_bright_d
-
-plot_r=np.arange(1,t_N,50)
-plot_max=0.1
-
-f, axarr = plt.subplots(3, 6)
-axarr[0, 0].imshow(plotter1[plot_r[0],:,:], cmap='gray')#,vmax=1,vmin=0)
-axarr[0, 1].imshow(plotter1[plot_r[1],:,:], cmap='gray')#,vmax=1,vmin=0)
-axarr[0, 2].imshow(plotter1[plot_r[2],:,:], cmap='gray')#,vmax=1,vmin=0)
-axarr[0, 3].imshow(plotter1[plot_r[3],:,:], cmap='gray')#,vmax=1,vmin=0)
-axarr[0, 4].imshow(plotter1[plot_r[4],:,:], cmap='gray')#,vmax=1,vmin=0)
-axarr[0, 5].imshow(plotter1[plot_r[5],:,:], cmap='gray')#,vmax=1,vmin=0)
-
-axarr[1, 0].imshow(plotter2[plot_r[0],:,:], cmap='gray')#,vmax=1,vmin=0)
-axarr[1, 1].imshow(plotter2[plot_r[1],:,:], cmap='gray')#,vmax=1,vmin=0)
-axarr[1, 2].imshow(plotter2[plot_r[2],:,:], cmap='gray')#,vmax=1,vmin=0)
-axarr[1, 3].imshow(plotter2[plot_r[3],:,:], cmap='gray')#,vmax=1,vmin=0)
-axarr[1, 4].imshow(plotter2[plot_r[4],:,:], cmap='gray')#,vmax=1,vmin=0)
-axarr[1, 5].imshow(plotter2[plot_r[5],:,:], cmap='gray')#,vmax=1,vmin=0)
-
-axarr[2, 0].imshow(plotter3[plot_r[0],:,:], cmap='gray')#,vmax=1,vmin=0)
-axarr[2, 1].imshow(plotter3[plot_r[1],:,:], cmap='gray')#,vmax=1,vmin=0)
-axarr[2, 2].imshow(plotter3[plot_r[2],:,:], cmap='gray')#,vmax=1,vmin=0)
-axarr[2, 3].imshow(plotter3[plot_r[3],:,:], cmap='gray')#,vmax=1,vmin=0)
-axarr[2, 4].imshow(plotter3[plot_r[4],:,:], cmap='gray')#,vmax=1,vmin=0)
-axarr[2, 5].imshow(plotter3[plot_r[5],:,:], cmap='gray')#,vmax=1,vmin=0)
-
-
-# Luminance edge profiler
-first=8
-second=13
-third=30
-
-plt.figure(filename)#,figsize=[4,13])
-
-plt.subplot(1,4,1)
-plt.imshow(stimulus,cmap='gray')
-plt.title('Input')
-
-plt.subplot(1,4,2)
-first_line=P[450,first,:]
-second_line=P[450,second,:]
-third_line=P[450,third,:]
-plt.plot(first_line,'r')
-plt.plot(second_line,'b')
-plt.plot(third_line,'g')
-plt.title('Steady-state solution')
-plt.ylim([0.7,1])
-
-plt.subplot(1,4,3)
-first_line=P_d[450,first,:]
-second_line=P_d[450,second,:]
-third_line=P_d[450,third,:]
-plt.plot(first_line,'r')
-plt.plot(second_line,'b')
-plt.plot(third_line,'g')
-plt.title('Dynamic solution')
-plt.ylim([0.7,1])
-
-plt.subplot(1,4,4)
-plt.imshow(P[450,:,:],cmap='gray')
-plt.plot(np.arange(0,P.shape[2],1),np.ones(P.shape[2])*first,'r')
-plt.plot(np.arange(0,P.shape[2],1),np.ones(P.shape[2])*second,'b')
-plt.plot(np.arange(0,P.shape[2],1),np.ones(P.shape[2])*third,'g')
-plt.xlim([0,P.shape[2]])
-plt.ylim([0,P.shape[1]])
-plt.title('Output Percept')
+## Diffusion state plotter
+#plotter1=ss
+#plotter2=S_bright
+#plotter3=S_bright_d
+#
+#plot_r=np.arange(1,t_N,50)
+#plot_max=0.1
+#
+#f, axarr = plt.subplots(3, 6)
+#axarr[0, 0].imshow(plotter1[plot_r[0],:,:], cmap='gray')#,vmax=1,vmin=0)
+#axarr[0, 1].imshow(plotter1[plot_r[1],:,:], cmap='gray')#,vmax=1,vmin=0)
+#axarr[0, 2].imshow(plotter1[plot_r[2],:,:], cmap='gray')#,vmax=1,vmin=0)
+#axarr[0, 3].imshow(plotter1[plot_r[3],:,:], cmap='gray')#,vmax=1,vmin=0)
+#axarr[0, 4].imshow(plotter1[plot_r[4],:,:], cmap='gray')#,vmax=1,vmin=0)
+#axarr[0, 5].imshow(plotter1[plot_r[5],:,:], cmap='gray')#,vmax=1,vmin=0)
+#
+#axarr[1, 0].imshow(plotter2[plot_r[0],:,:], cmap='gray')#,vmax=1,vmin=0)
+#axarr[1, 1].imshow(plotter2[plot_r[1],:,:], cmap='gray')#,vmax=1,vmin=0)
+#axarr[1, 2].imshow(plotter2[plot_r[2],:,:], cmap='gray')#,vmax=1,vmin=0)
+#axarr[1, 3].imshow(plotter2[plot_r[3],:,:], cmap='gray')#,vmax=1,vmin=0)
+#axarr[1, 4].imshow(plotter2[plot_r[4],:,:], cmap='gray')#,vmax=1,vmin=0)
+#axarr[1, 5].imshow(plotter2[plot_r[5],:,:], cmap='gray')#,vmax=1,vmin=0)
+#
+#axarr[2, 0].imshow(plotter3[plot_r[0],:,:], cmap='gray')#,vmax=1,vmin=0)
+#axarr[2, 1].imshow(plotter3[plot_r[1],:,:], cmap='gray')#,vmax=1,vmin=0)
+#axarr[2, 2].imshow(plotter3[plot_r[2],:,:], cmap='gray')#,vmax=1,vmin=0)
+#axarr[2, 3].imshow(plotter3[plot_r[3],:,:], cmap='gray')#,vmax=1,vmin=0)
+#axarr[2, 4].imshow(plotter3[plot_r[4],:,:], cmap='gray')#,vmax=1,vmin=0)
+#axarr[2, 5].imshow(plotter3[plot_r[5],:,:], cmap='gray')#,vmax=1,vmin=0)
+#
+#
+## Luminance edge profiler
+#first=8
+#second=13
+#third=30
+#
+#plt.figure(filename)#,figsize=[4,13])
+#
+#plt.subplot(1,4,1)
+#plt.imshow(stimulus,cmap='gray')
+#plt.title('Input')
+#
+#plt.subplot(1,4,2)
+#first_line=P[450,first,:]
+#second_line=P[450,second,:]
+#third_line=P[450,third,:]
+#plt.plot(first_line,'r')
+#plt.plot(second_line,'b')
+#plt.plot(third_line,'g')
+#plt.title('Steady-state solution')
+#plt.ylim([0.7,1])
+#
+#plt.subplot(1,4,3)
+#first_line=P_d[450,first,:]
+#second_line=P_d[450,second,:]
+#third_line=P_d[450,third,:]
+#plt.plot(first_line,'r')
+#plt.plot(second_line,'b')
+#plt.plot(third_line,'g')
+#plt.title('Dynamic solution')
+#plt.ylim([0.7,1])
+#
+#plt.subplot(1,4,4)
+#plt.imshow(P[450,:,:],cmap='gray')
+#plt.plot(np.arange(0,P.shape[2],1),np.ones(P.shape[2])*first,'r')
+#plt.plot(np.arange(0,P.shape[2],1),np.ones(P.shape[2])*second,'b')
+#plt.plot(np.arange(0,P.shape[2],1),np.ones(P.shape[2])*third,'g')
+#plt.xlim([0,P.shape[2]])
+#plt.ylim([0,P.shape[1]])
+#plt.title('Output Percept')
 
 #imag = d     # Image array to convert into video file
 #imag_name = 'd_0.05' # Name of image to be saved to
