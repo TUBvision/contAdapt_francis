@@ -80,7 +80,7 @@ def Diffusion_operator(lamda,f,t):
     ---------------------------------------------------------------------------
     This describes the synaptic states of diffusion processes and correspond to 
     It "models different types of electrical synapses (gap junctions).
-    The linear version, Kλ=0 , describes the exchange of both polarizing and 
+    The linear version, K=0 , describes the exchange of both polarizing and 
     de-polarizing". Thus the rectification found in the T operator serves to 
     dictate whether polizing (half-wave rectification) or de-polizing (inverse
     half-wave rectification) flow states are allowed to occur.
@@ -246,7 +246,7 @@ def OFFtype_norm(t_N,a,b,c,s,R,dt=1):
 Here is the code to run
 """
 # Parameters
-D = 0.01  # Diffusion Coefficient
+D = 0.1  # Diffusion Coefficient
 h = 1     # Runga-Kutta Step
 t0 = 0    # Start time
 t_N = 500 # End time = (Length of stimulation)
@@ -254,7 +254,7 @@ R = 1     # Regularisation parameter
 
 # Import jpg image or use square wave stimulus
 filename = "rs"
-im = Image.open(("{0}{1}{2}".format("/home/will/gitrepos/contAdaptTranslation/Documents/",filename,".png"))).convert('L')
+im = Image.open(("{0}{1}{2}".format("/home/will/Documents/Git_Repository/contAdapt_francis/Documents/",filename,".png"))).convert('L')
 
 # Resizing image (smaller) increases speed (but reduces accuracy)
 f_reduce = 4 # reduction factor
@@ -312,7 +312,12 @@ P_d = (S_bright_d-S_dark_d)/(1+S_bright_d+S_dark_d) # Dynamic
 
 
 
-""" What is a percivable lightness increment? """
+""" QUESTIONS 
+Why isn't c, d normalized to zero and 1? 
+How can we visualised how they evolve over time?
+How does this compare with BEATS processing? What is missing?
+
+"""
 
 
 
@@ -324,34 +329,33 @@ P_d = (S_bright_d-S_dark_d)/(1+S_bright_d+S_dark_d) # Dynamic
 """ Plotting of outputs """
 
 # Diffusion state plotter
-plotter1=ss
-plotter2=S_bright
-plotter3=S_bright_d
+plotter1=d_out
+plotter2=P
+plotter3=P_d
 
 plot_r=np.arange(1,t_N,50)
-plot_max=0.1
+vmaxv=np.max([plotter1,plotter2,plotter3])
+vminv=np.min([plotter1,plotter2,plotter3])
 
 f, axarr = plt.subplots(3, 6)
-axarr[0, 0].imshow(plotter1[plot_r[0],:,:], cmap='gray')#,vmax=1,vmin=0)
-axarr[0, 1].imshow(plotter1[plot_r[1],:,:], cmap='gray')#,vmax=1,vmin=0)
-axarr[0, 2].imshow(plotter1[plot_r[2],:,:], cmap='gray')#,vmax=1,vmin=0)
-axarr[0, 3].imshow(plotter1[plot_r[3],:,:], cmap='gray')#,vmax=1,vmin=0)
-axarr[0, 4].imshow(plotter1[plot_r[4],:,:], cmap='gray')#,vmax=1,vmin=0)
-axarr[0, 5].imshow(plotter1[plot_r[5],:,:], cmap='gray')#,vmax=1,vmin=0)
-
-axarr[1, 0].imshow(plotter2[plot_r[0],:,:], cmap='gray')#,vmax=1,vmin=0)
-axarr[1, 1].imshow(plotter2[plot_r[1],:,:], cmap='gray')#,vmax=1,vmin=0)
-axarr[1, 2].imshow(plotter2[plot_r[2],:,:], cmap='gray')#,vmax=1,vmin=0)
-axarr[1, 3].imshow(plotter2[plot_r[3],:,:], cmap='gray')#,vmax=1,vmin=0)
-axarr[1, 4].imshow(plotter2[plot_r[4],:,:], cmap='gray')#,vmax=1,vmin=0)
-axarr[1, 5].imshow(plotter2[plot_r[5],:,:], cmap='gray')#,vmax=1,vmin=0)
-
-axarr[2, 0].imshow(plotter3[plot_r[0],:,:], cmap='gray')#,vmax=1,vmin=0)
-axarr[2, 1].imshow(plotter3[plot_r[1],:,:], cmap='gray')#,vmax=1,vmin=0)
-axarr[2, 2].imshow(plotter3[plot_r[2],:,:], cmap='gray')#,vmax=1,vmin=0)
-axarr[2, 3].imshow(plotter3[plot_r[3],:,:], cmap='gray')#,vmax=1,vmin=0)
-axarr[2, 4].imshow(plotter3[plot_r[4],:,:], cmap='gray')#,vmax=1,vmin=0)
-axarr[2, 5].imshow(plotter3[plot_r[5],:,:], cmap='gray')#,vmax=1,vmin=0)
+axarr[0, 0].imshow(plotter1[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+axarr[0, 1].imshow(plotter1[plot_r[1],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+axarr[0, 2].imshow(plotter1[plot_r[2],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+axarr[0, 3].imshow(plotter1[plot_r[3],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+axarr[0, 4].imshow(plotter1[plot_r[4],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+axarr[0, 5].imshow(plotter1[plot_r[5],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+axarr[1, 0].imshow(plotter2[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+axarr[1, 1].imshow(plotter2[plot_r[1],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+axarr[1, 2].imshow(plotter2[plot_r[2],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+axarr[1, 3].imshow(plotter2[plot_r[3],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+axarr[1, 4].imshow(plotter2[plot_r[4],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+axarr[1, 5].imshow(plotter2[plot_r[5],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+axarr[2, 0].imshow(plotter3[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+axarr[2, 1].imshow(plotter3[plot_r[1],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+axarr[2, 2].imshow(plotter3[plot_r[2],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+axarr[2, 3].imshow(plotter3[plot_r[3],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+axarr[2, 4].imshow(plotter3[plot_r[4],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+axarr[2, 5].imshow(plotter3[plot_r[5],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
 
 
 # Luminance edge profiler
