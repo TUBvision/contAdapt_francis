@@ -246,15 +246,15 @@ def OFFtype_norm(t_N,a,b,c,s,R,dt=1):
 Here is the code to run
 """
 # Parameters
-D = 0.1  # Diffusion Coefficient
+D = 0.2  # Diffusion Coefficient [<0.75]
 h = 1     # Runga-Kutta Step
 t0 = 0    # Start time
-t_N = 500 # End time = (Length of stimulation)
+t_N = 400 # End time = (Length of stimulation)
 R = 1     # Regularisation parameter
 
 # Import jpg image or use square wave stimulus
 filename = "rs"
-im = Image.open(("{0}{1}{2}".format("/home/will/Documents/Git_Repository/contAdapt_francis/Documents/",filename,".png"))).convert('L')
+im = Image.open(("{0}{1}{2}".format("/home/will/gitrepos/contAdaptTranslation/Documents/",filename,".png"))).convert('L')
 
 # Resizing image (smaller) increases speed (but reduces accuracy)
 f_reduce = 4 # reduction factor
@@ -283,9 +283,9 @@ results = pool.map(multi_run_wrapper,[state1,state2,state3])
 pool.close()
 
 # output results into arrays
-a=results[0]  # minimum growth state of diffusion
-b=results[2]  # maximum growth state of diffusion
-ss=results[1] # steady-state diffusion
+a=results[0][0:t_N,:,:]  # minimum growth state of diffusion
+b=results[2][0:t_N,:,:]  # maximum growth state of diffusion
+ss=results[1][0:t_N,:,:] # steady-state diffusion
 
 # Two diffusion layers converging to normalized image 
 c, c_out = ONtype_norm(stimulus,t0,h,D,t_N,a,b,1) # Lightness filling-in
@@ -329,34 +329,44 @@ How does this compare with BEATS processing? What is missing?
 """ Plotting of outputs """
 
 # Diffusion state plotter
-plotter1=d_out
-plotter2=P
-plotter3=P_d
+# plotter1=ss
+plotter2=c
+plotter3=c_out
 
-plot_r=np.arange(1,t_N,50)
-vmaxv=np.max([plotter1,plotter2,plotter3])
-vminv=np.min([plotter1,plotter2,plotter3])
+plot_r=np.arange(1,t_N,5)
+vmaxv=0.03#np.max([plotter2,plotter3])
+vminv=-0.03#np.min([plotter2,plotter3])
 
-f, axarr = plt.subplots(3, 6)
-axarr[0, 0].imshow(plotter1[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
-axarr[0, 1].imshow(plotter1[plot_r[1],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
-axarr[0, 2].imshow(plotter1[plot_r[2],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
-axarr[0, 3].imshow(plotter1[plot_r[3],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
-axarr[0, 4].imshow(plotter1[plot_r[4],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
-axarr[0, 5].imshow(plotter1[plot_r[5],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
-axarr[1, 0].imshow(plotter2[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
-axarr[1, 1].imshow(plotter2[plot_r[1],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
-axarr[1, 2].imshow(plotter2[plot_r[2],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
-axarr[1, 3].imshow(plotter2[plot_r[3],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
-axarr[1, 4].imshow(plotter2[plot_r[4],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
-axarr[1, 5].imshow(plotter2[plot_r[5],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
-axarr[2, 0].imshow(plotter3[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
-axarr[2, 1].imshow(plotter3[plot_r[1],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
-axarr[2, 2].imshow(plotter3[plot_r[2],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
-axarr[2, 3].imshow(plotter3[plot_r[3],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
-axarr[2, 4].imshow(plotter3[plot_r[4],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
-axarr[2, 5].imshow(plotter3[plot_r[5],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+f, axarr = plt.subplots(2, 6)
+#axarr[0, 0].imshow(plotter1[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+#axarr[0, 1].imshow(plotter1[plot_r[1],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+#axarr[0, 2].imshow(plotter1[plot_r[2],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+#axarr[0, 3].imshow(plotter1[plot_r[3],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+#axarr[0, 4].imshow(plotter1[plot_r[4],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+#axarr[0, 5].imshow(plotter1[plot_r[5],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+axarr[0, 0].imshow(plotter2[plot_r[0],:,:]-plotter2[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+axarr[0, 1].imshow(plotter2[plot_r[1],:,:]-plotter2[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+axarr[0, 2].imshow(plotter2[plot_r[2],:,:]-plotter2[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+axarr[0, 3].imshow(plotter2[plot_r[3],:,:]-plotter2[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+axarr[0, 4].imshow(plotter2[plot_r[4],:,:]-plotter2[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+axarr[0, 5].imshow(plotter2[plot_r[5],:,:]-plotter2[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+axarr[1, 0].imshow(plotter3[plot_r[0],:,:]-plotter3[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+axarr[1, 1].imshow(plotter3[plot_r[1],:,:]-plotter3[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+axarr[1, 2].imshow(plotter3[plot_r[2],:,:]-plotter3[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+axarr[1, 3].imshow(plotter3[plot_r[3],:,:]-plotter3[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+axarr[1, 4].imshow(plotter3[plot_r[4],:,:]-plotter3[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+axarr[1, 5].imshow(plotter3[plot_r[5],:,:]-plotter3[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
 
+# SCALE CHANGE OF NORMALIZATION OVER TIME
+plot2max=np.zeros((t_N))
+plot2mean=np.zeros((t_N))
+for i in np.arange(0,t_N-1):
+    plot2max[i]=np.max(plotter2[i,:,:])
+    plot2mean[i]=np.mean(plotter2[i,:,:])
+
+plt.figure(2)
+plt.plot(plot2max)#[0:-1])
+plt.plot(plot2mean)#[0:-1])
 
 # Luminance edge profiler
 first=8
@@ -367,37 +377,45 @@ gray = stimulus[30,20]
 plt.figure(filename)#,figsize=[4,13])
 
 plt.subplot(1,4,1)
-plt.imshow(stimulus,cmap='gray', vmin=0,vmax=1)
-plt.title('Input')
+stim1=stimulus[first,:]
+stim2=stimulus[second,:]
+stim3=stimulus[third,:]
+plt.plot(stim1,'r')
+plt.plot(stim2,'b')
+plt.plot(stim3,'g')
+plt.title('Input stimulus')
+plt.ylim([0,0.7])
 
 plt.subplot(1,4,2)
-first_line=P[t,first,:]
-second_line=P[t,second,:]
-third_line=P[t,third,:]
+# plotter2 profile
+first_line=plotter2[t,first,:]
+second_line=plotter2[t,second,:]
+third_line=plotter2[t,third,:]
 plt.plot(first_line,'r')
 plt.plot(second_line,'b')
 plt.plot(third_line,'g')
 plt.title('Steady-state solution')
-#plt.ylim([0.7,1])
+plt.ylim([0,0.7])
 
 plt.subplot(1,4,3)
-first_line=P_d[t,first,:]
-second_line=P_d[t,second,:]
-third_line=P_d[t,third,:]
+first_line=plotter3[t,first,:]
+second_line=plotter3[t,second,:]
+third_line=plotter3[t,third,:]
 plt.plot(first_line,'r')
 plt.plot(second_line,'b')
 plt.plot(third_line,'g')
 plt.title('Dynamic solution')
-#plt.ylim([0.7,1])
+plt.ylim([0,0.7])
+
 
 plt.subplot(1,4,4)
-plt.imshow(P[t,:,:],cmap='gray', vmin=0,vmax=1)
+plt.imshow(plotter2[t,:,:],cmap='gray', vmin=0,vmax=1)
 plt.plot(np.arange(0,P.shape[2],1),np.ones(P.shape[2])*first,'r')
 plt.plot(np.arange(0,P.shape[2],1),np.ones(P.shape[2])*second,'b')
 plt.plot(np.arange(0,P.shape[2],1),np.ones(P.shape[2])*third,'g')
 plt.xlim([0,P.shape[2]])
 plt.ylim([0,P.shape[1]])
-plt.title('Output Percept')
+plt.title('Output Dynamic solution')
 
 #imag = d     # Image array to convert into video file
 #imag_name = 'd_0.05' # Name of image to be saved to
