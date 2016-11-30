@@ -246,14 +246,14 @@ def OFFtype_norm(t_N,a,b,c,s,R,dt=1):
 Here is the code to run
 """
 # Parameters
-D = 0.2  # Diffusion Coefficient [<0.75]
+D = 0.5  # Diffusion Coefficient [<0.75]
 h = 1     # Runga-Kutta Step
 t0 = 0    # Start time
 t_N = 400 # End time = (Length of stimulation)
 R = 1     # Regularisation parameter
 
 # Import jpg image or use square wave stimulus
-filename = "rs"
+filename = "adelson"
 im = Image.open(("{0}{1}{2}".format("/home/will/gitrepos/contAdaptTranslation/Documents/",filename,".png"))).convert('L')
 
 # Resizing image (smaller) increases speed (but reduces accuracy)
@@ -334,8 +334,8 @@ plotter2=c
 plotter3=c_out
 
 plot_r=np.arange(1,t_N,5)
-vmaxv=0.03#np.max([plotter2,plotter3])
-vminv=-0.03#np.min([plotter2,plotter3])
+vmaxv=0.05#np.max([plotter2,plotter3])
+vminv=-0.05#np.min([plotter2,plotter3])
 
 f, axarr = plt.subplots(2, 6)
 #axarr[0, 0].imshow(plotter1[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
