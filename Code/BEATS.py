@@ -206,15 +206,17 @@ def ONtype_norm(s,t0,h,D,t_N,a,b,R,dt=1):
     
     c = np.zeros((t_N,a.shape[1],a.shape[2]))
     cd_out = np.zeros((t_N,a.shape[1],a.shape[2]))
+    cd_out_1 = np.zeros((t_N,a.shape[1],a.shape[2]))
+    cd_out_2 = np.zeros((t_N,a.shape[1],a.shape[2]))
 
     for t in np.arange(0,t_N-1):
         c[t,:,:] =  (s-a[t,:,:])/(b[t,:,:]-a[t,:,:]+R)
     
-        cd_out_1 = b[t,:,:]*(np.zeros((a.shape[1],a.shape[2]))-cd_out[t,:,:])
-        cd_out_2 = a[t,:,:]*(np.ones((a.shape[1],a.shape[2]))-cd_out[t,:,:])
-        cd_out[t,:,:] = dt*(cd_out_1 - cd_out_2 + s)    
+        cd_out_1[t,:,:] = b[t,:,:]*(np.zeros((a.shape[1],a.shape[2]))-cd_out[t,:,:])
+        cd_out_2[t,:,:] = a[t,:,:]*(np.ones((a.shape[1],a.shape[2]))-cd_out[t,:,:])
+        cd_out[t,:,:] = dt*(cd_out_1[t,:,:] - cd_out_2[t,:,:] + s)    
     
-    return c , cd_out
+    return c , cd_out, cd_out_1, cd_out_2
     
 
 def OFFtype_norm(t_N,a,b,c,s,R,dt=1):
@@ -253,8 +255,10 @@ t_N = 400 # End time = (Length of stimulation)
 R = 1     # Regularisation parameter
 
 # Import jpg image or use square wave stimulus
-filename = "adelson"
-im = Image.open(("{0}{1}{2}".format("/home/will/gitrepos/contAdaptTranslation/Documents/",filename,".png"))).convert('L')
+filename = "rs"
+im = Image.open(("{0}{1}{2}".format("C:\Users\Will\Documents\gitrepos\contAdapt_francis\Documents\\",filename,".png"))).convert('L')
+#C:\Users\Will\Documents\gitrepos\contAdapt_francis\Documents\rs.png
+#/home/will/gitrepos/contAdaptTranslation/Documents/rs.ng
 
 # Resizing image (smaller) increases speed (but reduces accuracy)
 f_reduce = 4 # reduction factor
