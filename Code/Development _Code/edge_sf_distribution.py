@@ -3,6 +3,9 @@
 Created on Wed Nov 23 15:40:25 2016
 
 @author: Will
+
+Investigating the spatial frequency statistics within an image....
+In development only first ideas.
 """
 import matplotlib.pyplot as plt
 from PIL import Image

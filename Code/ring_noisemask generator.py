@@ -71,7 +71,7 @@ noise = np.random.rand(N,N)*A
 
 # Otherwise import jpg image 
 filename = "zebra"
-im = Image.open(("{0}{1}{2}".format("/home/will/Documents/Images/",filename,".png"))).convert('L')
+im = Image.open(("{0}{1}{2}".format("/home/will/Documents/Git_Repository/contAdapt_francis/Documents/Stimuli/",filename,".jpg"))).convert('L')
 # Resizing image (smaller) increases speed (but reduces accuracy)
 f_reduce = 1 # reduction factor
 arr = np.array(im.resize((N,N), Image.ANTIALIAS))
@@ -79,8 +79,8 @@ noise = arr
 
 # Create ring filter [approx radius/3 for spatial freq]
 a, b = N/2, N/2
-r_1 = 20 #Outer radius of ring filter 
-r_2 = 1 #Inner radius of ring filter
+r_1 = 150#Outer radius of ring filter  [30-20 for 3-5cpd]
+r_2 = 100 #Inner radius of ring filter
 
 y,x = np.ogrid[-a:N-a, -b:N-b]
 mask_1 = x*x + y*y <= r_1*r_1
@@ -108,25 +108,27 @@ noise_out=np.fft.ifft2(fft_noise)
 #noise_out[N/2,N/2]=noise_out[N/2,N/2]-np.mean(noise_out) # Threshold DC term
 
 # Convert into cycles per degree visual angle (cm)
-S = 5. # size of image in cm
-D = 15. # distance from image in cm
+screen_size=39.624
+pixel=np.sqrt(1366**2+768**2)
+pixel_dim=screen_size/pixel
+S = pixel_dim*N # size of image in cm
+D = 50. # distance from image in cm
 V = 2 *np.arctan(S/(2*D))
-
+scale = (N*V)/2
 # Image plotting
 #plt_limit = 10
 plt.figure(1,figsize=[S,S]) # Width x Heigh in inches
 plt.subplot(2,1,1)
-plt.imshow(np.log(fft_plot_un),cmap='gray')#,extent=[-(N*V)/2,(N*V)/2,-(N*V)/2,(N*V)/2])
+plt.imshow(np.log(fft_plot_un),cmap='gray',extent=[-scale,scale,-scale,scale])
 plt.title('Fourier unmasked')
 
 plt.subplot(2,1,2)
-plt.imshow(np.log(fft_plot),cmap='gray',extent=[-(N*V)/2,(N*V)/2,-(N*V)/2,(N*V)/2])
+plt.imshow(np.log(fft_plot),cmap='gray',extent=[-scale,scale,-scale,scale])
 plt.title('Fourier masked')
 plt.locator_params(axis='x',nbins=10)
 plt.locator_params(axis='y',nbins=10)
 #plt.xlim([-plt_limit,plt_limit])
 #plt.ylim([-plt_limit,plt_limit])
-
 
 plt.figure(2,figsize=[7,7])
 plt.subplot(2,1,1)

@@ -1,14 +1,26 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Jan  7 09:32:30 2016
+Create White's Stimuli & Adaptor slides
 
-@author: will
+Taken from Torsten Betz's code and restructured for other applications.
+SOURCE : https://github.com/TUBvision/betz2015_contour
+------------------------------------------------------------------------------
+White's Illusion can be created with diffuse edges or contain an inner patch
+within the test patch (part of "whites_illusion_bmcc")
+------------------------------------------------------------------------------
+Also extended the code to create adaptation bars within different contexts7,
+(part of "contours_white_bmmc"):
 
-Create White's Stimulus
-
-Taken from Torstens code and restructured for this application.
-Only real addition is evaluate tool which controls the other premade functions.
-https://github.com/TUBvision/betz2015_contour
+vertical      : vertical edge adaptors
+horizontal    : horizontal edge adaptors
+sup_dep_short : short "surround-suppresion-edge" adaptors
+sup_dep_long  : long "surround-suppresion-edge" adaptors
+T-junction    : T-junction adaptors
+checker       : checker board adaptors
+checker_patch : checker board adaptors
+checker_odd   : checker board adaptors
+------------------------------------------------------------------------------
+"evaluate" function is used to call both stimuli and adapter creator functions
 """
 import numpy as np
 
@@ -470,7 +482,6 @@ def contours_white_bmmc(shape, ppd, contrast, frequency, mean_lum=.5,
         idx_mask[y_pos[2] - offset : y_pos[2] + offset, x_pos[6] -ph: x_pos[6] + ph] = True
         idx_mask[y_pos[3] - offset : y_pos[3] + offset, x_pos[6] -ph: x_pos[6] + ph] = True
         
-        
         mask_dark[idx_mask] = dark
         mask_bright[idx_mask] = bright
     
@@ -486,9 +497,9 @@ def evaluate(patch_h,direction,typ,contrast_f):
         mask_dark,mask_bright = contours_white_bmmc((2,2),100,1,2,mean_lum=gray/2,contour_width=2,patch_height=patch_h,orientation='horizontal')
     elif direction == 'v': # vertical bars
         mask_dark,mask_bright = contours_white_bmmc((2,2),100,1,2,mean_lum=gray/2,contour_width=2,patch_height=patch_h,orientation='vertical')
-    elif direction == 's':
+    elif direction == 's': # surround supression edge bars
         mask_dark,mask_bright = contours_white_bmmc((2,2),100,1,2,mean_lum=gray,contour_width=2,patch_height=patch_h,orientation='sup_dep_long')
-    elif direction == 't':
+    elif direction == 't': # T-junction bats
         mask_dark,mask_bright = contours_white_bmmc((2,2),100,1,2,mean_lum=gray,contour_width=2,patch_height=patch_h,orientation='T-junction')
     elif direction == 'both': # both directions
         mask_dark = []
@@ -501,7 +512,7 @@ def evaluate(patch_h,direction,typ,contrast_f):
     return stim, mask_dark, mask_bright
 
 
-####### Testing Code for Printing Output for different cases #######
+####### Testing Code for Printing Output in different cases #######
 
 #shape = (50,80)
 #gray=127

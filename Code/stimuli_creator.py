@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-This code takes the stimuli creator component out of CANNEM for speed when
-investigating new types of stimuli with adaptation - WI only
+Create contour adaptation videos - investigate influence of contrast suppression
+in various stimuli. Stimuli creator component taken out of the CANNEM model for 
+and built into self-standing code for ease of use and speed.
 """
 
 import numpy as np
@@ -10,6 +11,30 @@ import os
 import scipy
 import imageio
 from PIL import Image
+
+# Input parameters
+adaptorColorChange=5
+i_x = i_y = 200
+testOnset = 6 # Time when adaptors go off and stimuli is shown
+stopT = 10 # Length of video
+stepT=startT= 0.1 # Time step of simulation and beginning
+gray = 127 # Gray value
+patch_h = 0.25 # Height of test patch
+direction = 'checker_odd' # Type of adaptor 
+typ = 'norm' # Type of stimuli
+contrast = 0.1
+noise = 0
+timeCount = 0
+
+# Checker board parameters
+N = 100 # Size of checker box to stack
+h = 4 # Number of checkers stacked
+i_x=500 # X dimension of image
+i_y=800 # Y dimension of image
+
+shape = (i_x,i_y)
+ppd=5
+g_val=[1.5,1.6,1.7] 
 
 def  ConvertRGBtoOpponentColor(rgb, gray):
     """
@@ -34,30 +59,6 @@ def  ConvertRGBtoOpponentColor(rgb, gray):
     rg = (rgb[:,:,0] - rgb[:,:,1])/(2*gray) 
     by = (rgb[:,:,2] - (rgb[:,:,0] + rgb[:,:,1])/2)/(2*gray) 
     return [rg, by,wb]
-
-# Input parameters
-adaptorColorChange=5
-i_x = i_y = 200
-testOnset = 6
-stopT = 10
-stepT=startT= 0.1
-gray = 127
-patch_h = 0.25
-direction = 'checker_odd'
-typ = 'norm'
-contrast = 0.1
-noise = 0
-timeCount = 0
-
-# Checker parameters
-N = 100 # Size of checker box to stack
-h = 4 # Number of checkers stacked
-i_x=500
-i_y=800
-
-shape = (i_x,i_y)
-ppd=5
-g_val=[1.5,1.6,1.7] 
         
 for time in np.arange(startT,stopT,stepT):
     
@@ -135,7 +136,7 @@ for time in np.arange(startT,stopT,stepT):
 # Compile images into GIF
 N = stopT*10 # number of images
 images=[]
-resultsDirectory= "C:\Users\Will\Documents\gitrepos\contAdapt_francis\Code\Image_Outputs"
+resultsDirectory= "/home/will/Documents/Git_Repository/contAdapt_francis/Code/Image_Outputs"
 for i in np.arange(1,N-1):
     if i < 10:
         images.append(np.array(Image.open(("{0}{1}{2}{3}".format(resultsDirectory,'/All0',i,".png"))).convert('L'))/255.)
@@ -149,6 +150,5 @@ imageio.mimsave(filename, images,duration=0.1)
 """
 IDEAS FOR IMPROVEMENT
 - Don't save images into files, just into an array and then compile into GIF
-- General cleaning up and labelling of parameters
 - Incompatibility between the different conditions, test crossover matching
 """

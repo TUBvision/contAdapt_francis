@@ -203,20 +203,20 @@ def ONtype_norm(s,t0,h,D,t_N,a,b,R,dt=1):
     c     - steady state solution
     c_out - dynamic solution
     """
+    n1=a.shape[1]
+    n2=a.shape[2]
     
-    c = np.zeros((t_N,a.shape[1],a.shape[2]))
-    cd_out = np.zeros((t_N,a.shape[1],a.shape[2]))
-    cd_out_1 = np.zeros((t_N,a.shape[1],a.shape[2]))
-    cd_out_2 = np.zeros((t_N,a.shape[1],a.shape[2]))
+    c = np.zeros((t_N,n1,n2))
+    cd_out = np.zeros((t_N,n1,n2))
 
-    for t in np.arange(0,t_N-1):
+    for t in np.arange(1,t_N-1):
         c[t,:,:] =  (s-a[t,:,:])/(b[t,:,:]-a[t,:,:]+R)
     
-        cd_out_1[t,:,:] = b[t,:,:]*(np.zeros((a.shape[1],a.shape[2]))-cd_out[t,:,:])
-        cd_out_2[t,:,:] = a[t,:,:]*(np.ones((a.shape[1],a.shape[2]))-cd_out[t,:,:])
-        cd_out[t,:,:] = dt*(cd_out_1[t,:,:] - cd_out_2[t,:,:] + s)    
+        cd_out_1 = b[t,:,:]*(np.zeros((n1,n2))-cd_out[t-1,:,:])
+        cd_out_2 = a[t,:,:]*(np.ones((n1,n2))-cd_out[t-1,:,:])
+        cd_out[t,:,:] = dt*(cd_out_1 - cd_out_2 + s)    
     
-    return c , cd_out, cd_out_1, cd_out_2
+    return c , cd_out
     
 
 def OFFtype_norm(t_N,a,b,c,s,R,dt=1):
@@ -225,21 +225,24 @@ def OFFtype_norm(t_N,a,b,c,s,R,dt=1):
     --------------------------------------------------------------------------
     Same as dynamic normalisation, but opposite.
     
-    ISSUE : R (+1) regularisation parameter in steady state solution to buffer NaN    
+    ISSUE : R (+1) regularisation parameter in steady state solution to buffer NaN  
+            as recommended by Keil. 
     
     Returns
     --------
     d     - steady state solution
     d_out - dynamic solution
     """
+    n1=a.shape[1]
+    n2=a.shape[2] 
     
-    d = np.zeros((t_N,a.shape[1],a.shape[2]))
-    d_out = np.zeros((t_N,a.shape[1],a.shape[2]))
+    d = np.zeros((t_N,n1,n2))
+    d_out = np.zeros((t_N,n1,n2))
     for t in np.arange(0,t_N-1):
         d[t,:,:] = (b[t,:,:] - s) / (b[t,:,:] - a[t,:,:]+R)      
        
-        d_out_1 = b[t,:,:]*(np.zeros((a.shape[1],a.shape[2]))-d_out[t,:,:])
-        d_out_2 = a[t,:,:]*(np.ones((a.shape[1],a.shape[2]))-d_out[t,:,:])
+        d_out_1 = b[t,:,:]*(np.zeros((n1,n2))-d_out[t,:,:])
+        d_out_2 = a[t,:,:]*(np.ones((n1,n2))-d_out[t,:,:])
         d_out[t,:,:] = dt*(d_out_1 - d_out_2 - s)
     return d, d_out
     
@@ -248,27 +251,28 @@ def OFFtype_norm(t_N,a,b,c,s,R,dt=1):
 Here is the code to run
 """
 # Parameters
-D = 0.5  # Diffusion Coefficient [<0.75]
-h = 1     # Runga-Kutta Step
+D = 0.25  # Diffusion Coefficient [<0.75]
+h = 1     # Runga-Kutta Step [h = 1]
 t0 = 0    # Start time
-t_N = 400 # End time = (Length of stimulation)
-R = 1     # Regularisation parameter
+t_N = 500 # Length of stimulation [up to 1000 or too much memory used]
+R = 1     # Regularisation parameter [R = 1]
 
 # Import jpg image or use square wave stimulus
-filename = "rs"
-im = Image.open(("{0}{1}{2}".format("C:\Users\Will\Documents\gitrepos\contAdapt_francis\Documents\\",filename,".png"))).convert('L')
+filename = "whites_1" # Add your own or look in "contAdapt_francis/Documents/"
+im = Image.open(("{0}{1}{2}".format("/home/will/Documents/Git_Repository/contAdapt_francis/Documents/",filename,".png"))).convert('L')
 #C:\Users\Will\Documents\gitrepos\contAdapt_francis\Documents\rs.png
-#/home/will/gitrepos/contAdaptTranslation/Documents/rs.ng
+
+# Repository names
+# /home/will/gitrepos/contAdaptTranslation/Documents/rs.ng
+# /home/will/Documents/Git_Repository/contAdapt_francis/Documents
 
 # Resizing image (smaller) increases speed (but reduces accuracy)
-f_reduce = 4 # reduction factor
+f_reduce = 5 # reduction factor
 arr = np.array(im.resize((im.size[0]/f_reduce,im.size[1]/f_reduce), Image.ANTIALIAS))
 #arr = np.array(im)
 
 # Scale down from grey to binary scale
 stimulus=arr/255.
-
-#convert into usable array
 N=stimulus.shape[0]
 
 """
@@ -295,50 +299,39 @@ ss=results[1][0:t_N,:,:] # steady-state diffusion
 c, c_out = ONtype_norm(stimulus,t0,h,D,t_N,a,b,1) # Lightness filling-in
 d, d_out = OFFtype_norm(t_N,a,b,c,stimulus,1)     # Darkness filling-in
 
-maxval = np.zeros_like(c)
 
-
-# Steady-state half-wave-rectify
-S_bright = np.array([c, maxval]).max(axis=0)
-S_dark   = np.array([d, maxval]).min(axis=0)
-
-# Dynamic state half-wave-rectify
-S_bright_d = np.array([c_out, maxval]).max(axis=0)
-S_dark_d   = np.array([d_out, maxval]).min(axis=0)
-
-# Perceptual activities
-P = (S_bright-S_dark)/(1+S_bright+S_dark) # Steady-state
-P_d = (S_bright_d-S_dark_d)/(1+S_bright_d+S_dark_d) # Dynamic
-
+""" Later components for full BEATS processing """
+#maxval = np.zeros_like(c)
+#
+#
+## Steady-state half-wave-rectify
+#S_bright = np.array([c, maxval]).max(axis=0)
+#S_dark   = np.array([d, maxval]).min(axis=0)
+#
+## Dynamic state half-wave-rectify
+#S_bright_d = np.array([c_out, maxval]).max(axis=0)
+#S_dark_d   = np.array([d_out, maxval]).min(axis=0)
+#
+## Perceptual activities
+#P = (S_bright-S_dark)/(1+S_bright+S_dark) # Steady-state
+#P_d = (S_bright_d-S_dark_d)/(1+S_bright_d+S_dark_d) # Dynamic
+#
 # Positive values only
 #P  = np.array([P, maxval]).max(axis=0)
 #P_d= np.array([P_d, maxval]).max(axis=0)
 
 
 
-""" QUESTIONS 
-Why isn't c, d normalized to zero and 1? 
-How can we visualised how they evolve over time?
-How does this compare with BEATS processing? What is missing?
-
-"""
-
-
-
-
-
-
-
-
 """ Plotting of outputs """
-
-# Diffusion state plotter
+""" Diffusion state plotter (change in state) either a,b,c or c_out"""
 # plotter1=ss
 plotter2=c
 plotter3=c_out
 
-plot_r=np.arange(1,t_N,5)
-vmaxv=0.05#np.max([plotter2,plotter3])
+plot_r=np.arange(1,t_N,5) # state time plotter array
+
+# Plot intensity limits
+vmaxv=0.1#np.max([plotter2,plotter3])
 vminv=-0.05#np.min([plotter2,plotter3])
 
 f, axarr = plt.subplots(2, 6)
@@ -348,6 +341,7 @@ f, axarr = plt.subplots(2, 6)
 #axarr[0, 3].imshow(plotter1[plot_r[3],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
 #axarr[0, 4].imshow(plotter1[plot_r[4],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
 #axarr[0, 5].imshow(plotter1[plot_r[5],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+# edit for "Change in lightness evolution" -plotter2[plot_r[0],:,:]
 axarr[0, 0].imshow(plotter2[plot_r[0],:,:]-plotter2[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
 axarr[0, 1].imshow(plotter2[plot_r[1],:,:]-plotter2[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
 axarr[0, 2].imshow(plotter2[plot_r[2],:,:]-plotter2[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
@@ -361,7 +355,8 @@ axarr[1, 3].imshow(plotter3[plot_r[3],:,:]-plotter3[plot_r[0],:,:], cmap='gray',
 axarr[1, 4].imshow(plotter3[plot_r[4],:,:]-plotter3[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
 axarr[1, 5].imshow(plotter3[plot_r[5],:,:]-plotter3[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
 
-# SCALE CHANGE OF NORMALIZATION OVER TIME
+
+""" SCALE CHANGE OF NORMALIZATION OVER TIME """
 plot2max=np.zeros((t_N))
 plot2mean=np.zeros((t_N))
 for i in np.arange(0,t_N-1):
@@ -371,12 +366,14 @@ for i in np.arange(0,t_N-1):
 plt.figure(2)
 plt.plot(plot2max)#[0:-1])
 plt.plot(plot2mean)#[0:-1])
+plt.xlabel('time')
+plt.ylabel('intensity value')
 
-# Luminance edge profiler
-first=8
-second=13
-third=30
-t = 20 # State of process
+""" Luminance edge profiler [ Choose x axis values for cross-sections]"""
+first=0
+second=33
+third=0
+t = 400 # State of process e.g. t = 400
 gray = stimulus[30,20]
 plt.figure(filename)#,figsize=[4,13])
 
@@ -392,9 +389,9 @@ plt.ylim([0,0.7])
 
 plt.subplot(1,4,2)
 # plotter2 profile
-first_line=plotter2[t,first,:]
-second_line=plotter2[t,second,:]
-third_line=plotter2[t,third,:]
+first_line=plotter3[t,first,:]
+second_line=plotter3[t,second,:]
+third_line=plotter3[t,third,:]
 plt.plot(first_line,'r')
 plt.plot(second_line,'b')
 plt.plot(third_line,'g')
@@ -411,7 +408,6 @@ plt.plot(third_line,'g')
 plt.title('Dynamic solution')
 plt.ylim([0,0.7])
 
-
 plt.subplot(1,4,4)
 plt.imshow(plotter2[t,:,:],cmap='gray', vmin=0,vmax=1)
 plt.plot(np.arange(0,P.shape[2],1),np.ones(P.shape[2])*first,'r')
@@ -420,62 +416,3 @@ plt.plot(np.arange(0,P.shape[2],1),np.ones(P.shape[2])*third,'g')
 plt.xlim([0,P.shape[2]])
 plt.ylim([0,P.shape[1]])
 plt.title('Output Dynamic solution')
-
-#imag = d     # Image array to convert into video file
-#imag_name = 'd_0.05' # Name of image to be saved to
-#fps = 60            # Frames per second [3-5 default]
-#
-#imag_int8=(imag*255.).astype('uint8')  # Rescale back to RGB255 and change to uint8 format for avi 
-#filename = "{0}{1}{2}".format('/home/will/Documents/Git_Repository/Outputs/',imag_name,'.avi')
-#writer = cv2.VideoWriter(filename, cv2.cv.CV_FOURCC('M','J','P','G'), fps, (N, N), False)
-#for i in np.arange(0,t_N):
-#    writer.write(imag_int8[i,:,:])
-
-
-## How the images evolve
-
-## How the pixel distribution evolves
-##ylim_max=2500
-##xlim_max=1
-##fig3, (ax1,ax2,ax3,ax4,ax5,ax6) = plt.pyplot.subplots(ncols=6, figsize=(20,5))
-##ax1.hist(np.reshape(f_out[1,:,:],f_out.shape[1]*f_out.shape[2]),bins=20)
-##ax1.set_xlim(0.0,xlim_max)
-##ax1.set_ylim(0,ylim_max)
-##ax2.hist(np.reshape(f_out[5,:,:],f_out.shape[1]*f_out.shape[2]),bins=20)
-##ax2.set_xlim(0.0,xlim_max)
-##ax2.set_ylim(0,ylim_max)
-##ax3.hist(np.reshape(f_out[10,:,:],f_out.shape[1]*f_out.shape[2]),bins=20)
-##ax3.set_ylim(0,ylim_max)
-##ax3.set_xlim(0.0,xlim_max)
-##ax4.hist(np.reshape(f_out[20,:,:],f_out.shape[1]*f_out.shape[2]),bins=20)
-##ax4.set_ylim(0,ylim_max)
-##ax4.set_xlim(0.0,xlim_max)
-##ax5.hist(np.reshape(f_out[50,:,:],f_out.shape[1]*f_out.shape[2]),bins=20)
-##ax5.set_ylim(0,ylim_max)
-##ax5.set_xlim(0.0,xlim_max)
-##ax6.hist(np.reshape(f_out[100,:,:],f_out.shape[1]*f_out.shape[2]),bins=20)
-##ax6.set_ylim(0,ylim_max)
-##ax6.set_xlim(0.0,xlim_max)
-
-
-#N = 128
-#stimulus = square_wave.square_wave((1,1), N, 1, 6, mean_lum=.5, period='ignore',start='high')
-
-
-#f_out = Runge_Kutta(stimulus,0,t0,h,N,D,t_N) # Equilibrium
-#a = Runge_Kutta(stimulus,-1,t0,h,N,D,t_N) # Minimum syncytiun (evolves into global minimum)
-#b = Runge_Kutta(stimulus,1,t0,h,N,D,t_N) # Max syncytium (evolves into global maximum)
-
-#
-#im = Image.open("/home/will/gitrepos/contAdaptTranslation/Documents/whites.jpg").convert('L')
-#arr = np.array(im.resize((500,500), Image.ANTIALIAS))
-#stimulus=arr/255.
-#
-#plt.subplot(4,1,1)
-#plt.imshow(stimulus,cmap='jet')
-#plt.subplot(4,1,2)
-#plt.imshow(stimulus,cmap='PiYG')
-#plt.subplot(4,1,3)
-#plt.imshow(stimulus,cmap='bwr')
-#plt.subplot(4,1,4)
-#plt.imshow(stimulus,cmap='Greens')

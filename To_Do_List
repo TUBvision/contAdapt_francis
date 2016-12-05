@@ -24,30 +24,23 @@ rather than through a filter?
 
 To Do List TUB
 -------------------
-- Further develop understanding of Keil's BEATS model
+- Introduce FIDOs as post processing step in BEATS normalization process, to create more uniform output percepts.
 
-Where does the lightness change observed come from in the code? Can we reverse it?
+- Apply generated noisemasks to Various models to test their "Edge noise" dependency
 
+- Change stimuli in context adaptation code to make less context influences
 
-
-- Noisemask generators, requires better understanding of explicity DOG bandwidth defintion.
-
-This can also be achieved by profiling the original noisemask code in tandem written by
-Torsten in MATLAB. However, DOG filters are thought to be physiologically plausible, therefore
-it's worth working on this much cleaner noise mask generator for experience with this 
-type of processing. After these are made, and the spatial frequency ranges of the noise masks
-are with ranges used with the experiments on noise masking, then they will be applied to 
-the models to test how they react, and where there is a specificity to their noise depedence
-as observed in one of torsten & mariannes papers.
-Better but still needs development. Exactly how width of filter equates to spatial frequency.
-Could try to define simple binary type stimuli of known spatial frequency and then try to filter them.....
-
+- Normalisation method applied to many different scales of internal patches to create this GRAPH
 
 - Define direction of diffuse edges in WI
 
 This is relatively exploratory and without firm theoretical underpinnings, but I want to look 
 at how diffuse edges in WI will effect immediate perception of the illusion as well as how the
 various models deal with diffuse edges in their computations.
+
+- General cleaning up and labelling of the code and removing old/excess code
+
+- Write out justifications for other exploratory work involved and document the code
 
 
 

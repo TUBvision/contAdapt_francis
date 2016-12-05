@@ -3,6 +3,8 @@
 Created on Mon Oct 24 13:24:04 2016
 
 @author: will
+
+Filtering an image with Gaussian Noise Masks
 """
 import numpy as np
 import math
