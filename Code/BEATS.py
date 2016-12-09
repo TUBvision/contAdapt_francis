@@ -258,8 +258,8 @@ t_N = 500 # Length of stimulation [up to 1000 or too much memory used]
 R = 1     # Regularisation parameter [R = 1]
 
 # Import jpg image or use square wave stimulus
-filename = "whites_1" # Add your own or look in "contAdapt_francis/Documents/"
-im = Image.open(("{0}{1}{2}".format("/home/will/Documents/Git_Repository/contAdapt_francis/Documents/",filename,".png"))).convert('L')
+##filename = "whites_1" # Add your own or look in "contAdapt_francis/Documents/"
+##im = Image.open(("{0}{1}{2}".format("/home/will/Documents/Git_Repository/contAdapt_francis/Documents/",filename,".png"))).convert('L')
 #C:\Users\Will\Documents\gitrepos\contAdapt_francis\Documents\rs.png
 
 # Repository names
@@ -267,13 +267,13 @@ im = Image.open(("{0}{1}{2}".format("/home/will/Documents/Git_Repository/contAda
 # /home/will/Documents/Git_Repository/contAdapt_francis/Documents
 
 # Resizing image (smaller) increases speed (but reduces accuracy)
-f_reduce = 5 # reduction factor
-arr = np.array(im.resize((im.size[0]/f_reduce,im.size[1]/f_reduce), Image.ANTIALIAS))
+##f_reduce = 5 # reduction factor
+##arr = np.array(im.resize((im.size[0]/f_reduce,im.size[1]/f_reduce), Image.ANTIALIAS))
 #arr = np.array(im)
 
 # Scale down from grey to binary scale
-stimulus=arr/255.
-N=stimulus.shape[0]
+stim=stimulus[0,:,:]/255.
+N=stim.shape[0]
 
 """
 To increase code speed, multiple processors are run simultaneously with different
@@ -284,9 +284,9 @@ def multi_run_wrapper(args):
 
 # Three diffusion behaviour states
 pool = Pool(4) # Open 4 processors available on this computer into Pools
-state1=(stimulus,-1,t0,h,D,t_N)
-state2=(stimulus,0,t0,h,D,t_N)
-state3=(stimulus,1,t0,h,D,t_N)
+state1=(stim,-1,t0,h,D,t_N)
+state2=(stim,0,t0,h,D,t_N)
+state3=(stim,1,t0,h,D,t_N)
 results = pool.map(multi_run_wrapper,[state1,state2,state3])
 pool.close()
 
@@ -296,8 +296,8 @@ b=results[2][0:t_N,:,:]  # maximum growth state of diffusion
 ss=results[1][0:t_N,:,:] # steady-state diffusion
 
 # Two diffusion layers converging to normalized image 
-c, c_out = ONtype_norm(stimulus,t0,h,D,t_N,a,b,1) # Lightness filling-in
-d, d_out = OFFtype_norm(t_N,a,b,c,stimulus,1)     # Darkness filling-in
+c, c_out = ONtype_norm(stim,t0,h,D,t_N,a,b,1) # Lightness filling-in
+d, d_out = OFFtype_norm(t_N,a,b,c,stim,1)     # Darkness filling-in
 
 
 """ Later components for full BEATS processing """
@@ -374,13 +374,13 @@ first=0
 second=33
 third=0
 t = 400 # State of process e.g. t = 400
-gray = stimulus[30,20]
+gray = stim[30,20]
 plt.figure(filename)#,figsize=[4,13])
 
 plt.subplot(1,4,1)
-stim1=stimulus[first,:]
-stim2=stimulus[second,:]
-stim3=stimulus[third,:]
+stim1=stim[first,:]
+stim2=stim[second,:]
+stim3=stim[third,:]
 plt.plot(stim1,'r')
 plt.plot(stim2,'b')
 plt.plot(stim3,'g')

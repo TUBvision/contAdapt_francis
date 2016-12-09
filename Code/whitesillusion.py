@@ -100,6 +100,22 @@ def square_wave(shape, ppd, contrast, frequency, mean_lum=.5, period='ignore',
                       if i + j < shape[1]]
     stim[:, index] = low if start is 'low' else high
     return stim, diff
+    
+def resize_array(arr, factor):
+    """
+    Return a copy of an array, resized by the given factor. Every value is
+    repeated factor[d] times along dimension d.
+    Parameters
+    ----------
+    arr : 2D array
+          the array to be resized
+    factor : tupel of 2 ints
+             the resize factor in the y and x dimensions
+    Returns
+    -------
+    An array of shape (arr.shape[0] * factor[0], arr.shape[1] * factor[1])
+    """
+    return np.repeat(np.repeat(arr, factor[0], axis=0), factor[1], axis=1)
 
 
 def whites_illusion_bmcc(shape, ppd, contrast, frequency, mean_lum=.5,
