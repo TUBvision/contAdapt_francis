@@ -3,7 +3,7 @@
 Created on Mon Jan  4 11:06:15 2016
 
 Currently, not working. GenSpec2 has infinite whileloop.
-Step my step comparison with Matlab required. 
+Step By step comparison with Matlab required. 
 That means running python on TUB machine, and matlan on Laptop,
 simultaneously.
 

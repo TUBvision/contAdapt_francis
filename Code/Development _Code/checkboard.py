@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Nov 17 14:31:25 2016
-
-@author: Will
+Development space for Adapters and Checkerboards for creating Stimuli and
+investigating contextual manipulations of contrast
 """
 
 import numpy as np

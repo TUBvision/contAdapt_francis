@@ -1,8 +1,34 @@
 # -*- coding: utf-8 -*-
 """
-Create contour adaptation videos - investigate influence of contrast suppression
-in various stimuli. Stimuli creator component taken out of the CANNEM model for 
-and built into self-standing code for ease of use and speed.
+Create contour adaptation GIFs, with various stimuli and adapters
+-------------------------------------------------------------------
+Components taken out of the CANNEM model (translated version of G. Francis
+FACADE-like model) and built into self-standing code for ease of use and speed.
+
+Parameters
+----------
+adaptorColorChange : change of colour of adaptor
+i_x = i_y = 200 : dimensions of axis
+testOnset : Time when adaptors go off and stimuli is shown
+stopT : Length of video
+stepT : Time step of simulation 
+startT : Initial time of stimuli
+gray : Mid gray value
+patch_h : Height of test patch
+direction : Type of adaptor 
+typ : Type of stimuli
+contrast : contrast between checkers
+noise : SF noise [not fully developed]
+
+Returns
+-----------
+GIF in specified folder of defined stimuli and adapter types
+
+Critique
+-----------
+Saving images is slow, rather just load into an array and then compile into GIF
+
+Possible incompatibility between the different conditions: Requires testing
 """
 
 import numpy as np
@@ -15,20 +41,20 @@ from PIL import Image
 # Input parameters
 adaptorColorChange=5
 i_x = i_y = 200
-testOnset = 6 # Time when adaptors go off and stimuli is shown
-stopT = 10 # Length of video
-stepT=startT= 0.1 # Time step of simulation and beginning
-gray = 127 # Gray value
-patch_h = 0.25 # Height of test patch
-direction = 'checker_odd' # Type of adaptor 
-typ = 'norm' # Type of stimuli
+testOnset = 6 
+stopT = 10 
+stepT=startT= 0.1 
+gray = 127 
+patch_h = 0.25 
+direction = 'checker_odd' 
+typ = 'norm'
 contrast = 0.1
 noise = 0
 timeCount = 0
 
-# Checker board parameters
+# Checker board parameters [Advise not to edit]
 N = 100 # Size of checker box to stack
-h = 4 # Number of checkers stacked
+h = 4   # Number of checkers stacked
 i_x=500 # X dimension of image
 i_y=800 # Y dimension of image
 
@@ -61,7 +87,6 @@ def  ConvertRGBtoOpponentColor(rgb, gray):
     return [rg, by,wb]
         
 for time in np.arange(startT,stopT,stepT):
-    
     # change adaptor color with each time step to produce flicker
     adaptorColorChange = -gray # black
     if np.mod(timeCount, 2)== 0:
@@ -93,8 +118,7 @@ for time in np.arange(startT,stopT,stepT):
     else: # Show test stimuli
         startInputImage = stim
 
-
-    # fixation markers
+    # Draw fixation markers
     startInputImage[i_x/2-2,i_y/2-2]=255
     startInputImage[i_x/2  ,i_y/2  ]=255
     startInputImage[i_x/2-2,i_y/2  ]=0
@@ -112,7 +136,6 @@ for time in np.arange(startT,stopT,stepT):
     
     # Create directory for results
     resultsDirectory = os.path.dirname("{0}/".format("Image_Outputs"))
-    
     if os.path.exists(resultsDirectory)==0:
         os.mkdir(resultsDirectory)        
     
@@ -131,7 +154,9 @@ for time in np.arange(startT,stopT,stepT):
     #Same image to file
     scipy.misc.imsave(filename, thing)
     
+    # Add second to time count
     timeCount=timeCount+1
+
 
 # Compile images into GIF
 N = stopT*10 # number of images
@@ -146,9 +171,3 @@ for i in np.arange(1,N-1):
 filename = "{0}{1}{2}{3}{4}{5}{6}{7}".format(resultsDirectory,"/",contrast,"_",typ,"_",direction,".gif")
 
 imageio.mimsave(filename, images,duration=0.1)
-
-"""
-IDEAS FOR IMPROVEMENT
-- Don't save images into files, just into an array and then compile into GIF
-- Incompatibility between the different conditions, test crossover matching
-"""

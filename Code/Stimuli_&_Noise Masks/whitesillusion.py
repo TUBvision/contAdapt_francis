@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 """
 Create White's Stimuli & Adaptor slides
-
+------------------------------------------------------------------------------
 Taken from Torsten Betz's code and restructured for other applications.
 SOURCE : https://github.com/TUBvision/betz2015_contour
-------------------------------------------------------------------------------
+
 White's Illusion can be created with diffuse edges or contain an inner patch
 within the test patch (part of "whites_illusion_bmcc")
 ------------------------------------------------------------------------------
-Also extended the code to create adaptation bars within different contexts7,
+Also extended the code to create adaptation bars within different contexts,
 (part of "contours_white_bmmc"):
 
 vertical      : vertical edge adaptors

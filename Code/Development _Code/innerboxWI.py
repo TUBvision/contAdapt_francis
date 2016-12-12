@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Created on Fri Oct 21 11:44:18 2016
-
-@author: will
+Creating inner patches to whitesillusion stimuli
 """
 import numpy as np
-#import  whitesillusion as WI
+import  whitesillusion as WI
 import matplotlib.pylab as plt
 
 shape=(2,2)

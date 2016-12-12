@@ -186,7 +186,23 @@ def Solve_diff_eq_RK4(stimulus,lamda,t0,h,D,t_N):
             t[n+1] = t[n] + h   
         return f
 
-
+def solve_diff_eq_Euler(stimulus,lamda,t0,D,t_N,dt):
+    
+    f = np.zeros((t_N+1,stimulus.shape[0],stimulus.shape[1])) #[time, equal shape space dimension]
+    t = np.zeros(t_N+1)
+    
+    if lamda ==0:
+        """    Linearity  Global Activity Preserved   """
+        for n in np.arange(1,t_N,h):
+            f[t[n],:,:] = dt*(D*flt.laplace(f[t[n-1],:,:]) + stimulus*Dirac_delta_test(t[n]-t0))
+    else:
+        """    Non-Linearity   (max/min syncytium) Global Activity Not Preserved   """
+        for n in np.arange(0,t_N):
+            f[t[n],:,:] = dt*(D*Diffusion_operator(lamda,f[t[n-1],:,:],t[n]) + stimulus*Dirac_delta_test(t[n]-t0))
+    
+    return f
+            
+            
 def ONtype_norm(s,t0,h,D,t_N,a,b,R,dt=1):
     """
     Dynamic normalisation or lightness filling-in (luminance increments)
@@ -251,7 +267,7 @@ def OFFtype_norm(t_N,a,b,c,s,R,dt=1):
 Here is the code to run
 """
 # Parameters
-D = 0.25  # Diffusion Coefficient [<0.75]
+D = 0.5  # Diffusion Coefficient [<0.75]
 h = 1     # Runga-Kutta Step [h = 1]
 t0 = 0    # Start time
 t_N = 500 # Length of stimulation [up to 1000 or too much memory used]
@@ -272,32 +288,37 @@ R = 1     # Regularisation parameter [R = 1]
 #arr = np.array(im)
 
 # Scale down from grey to binary scale
-stim=stimulus[0,:,:]/255.
+stim=all_stim_sm[0,:,:]#/255.
 N=stim.shape[0]
 
 """
 To increase code speed, multiple processors are run simultaneously with different
 diffusion states. The results are saved in the "results" array.
 """
-def multi_run_wrapper(args):
-   return Solve_diff_eq_RK4(*args)
+#def multi_run_wrapper(args):
+#   return Solve_diff_eq_RK4(*args)
+#
+## Three diffusion behaviour states
+#pool = Pool(4) # Open 4 processors available on this computer into Pools
+#state1=(stim,-1,t0,h,D,t_N)
+#state2=(stim,0,t0,h,D,t_N)
+#state3=(stim,1,t0,h,D,t_N)
+#results = pool.map(multi_run_wrapper,[state1,state2,state3])
+#pool.close()
 
-# Three diffusion behaviour states
-pool = Pool(4) # Open 4 processors available on this computer into Pools
-state1=(stim,-1,t0,h,D,t_N)
-state2=(stim,0,t0,h,D,t_N)
-state3=(stim,1,t0,h,D,t_N)
-results = pool.map(multi_run_wrapper,[state1,state2,state3])
-pool.close()
+# or solve with Euler mehtod
+dt=0.1
+a = solve_diff_eq_Euler(stim,-1,1,D,t_N,dt)
+b = solve_diff_eq_Euler(stim,1,1,D,t_N,dt)
 
 # output results into arrays
-a=results[0][0:t_N,:,:]  # minimum growth state of diffusion
-b=results[2][0:t_N,:,:]  # maximum growth state of diffusion
-ss=results[1][0:t_N,:,:] # steady-state diffusion
+#a=results[0][0:t_N,:,:]  # minimum growth state of diffusion
+#b=results[2][0:t_N,:,:]  # maximum growth state of diffusion
+#ss=results[1][0:t_N,:,:] # steady-state diffusion
 
 # Two diffusion layers converging to normalized image 
 c, c_out = ONtype_norm(stim,t0,h,D,t_N,a,b,1) # Lightness filling-in
-d, d_out = OFFtype_norm(t_N,a,b,c,stim,1)     # Darkness filling-in
+#d, d_out = OFFtype_norm(t_N,a,b,c,stim,1)     # Darkness filling-in
 
 
 """ Later components for full BEATS processing """
@@ -325,16 +346,16 @@ d, d_out = OFFtype_norm(t_N,a,b,c,stim,1)     # Darkness filling-in
 """ Plotting of outputs """
 """ Diffusion state plotter (change in state) either a,b,c or c_out"""
 # plotter1=ss
-plotter2=c
-plotter3=c_out
+#plotter2=c
+#plotter3=c_out
 
 plot_r=np.arange(1,t_N,5) # state time plotter array
 
 # Plot intensity limits
-vmaxv=0.1#np.max([plotter2,plotter3])
+vmaxv=0.05#np.max([plotter2,plotter3])
 vminv=-0.05#np.min([plotter2,plotter3])
 
-f, axarr = plt.subplots(2, 6)
+#f, axarr = plt.subplots(2, 6)
 #axarr[0, 0].imshow(plotter1[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
 #axarr[0, 1].imshow(plotter1[plot_r[1],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
 #axarr[0, 2].imshow(plotter1[plot_r[2],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
@@ -342,26 +363,26 @@ f, axarr = plt.subplots(2, 6)
 #axarr[0, 4].imshow(plotter1[plot_r[4],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
 #axarr[0, 5].imshow(plotter1[plot_r[5],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
 # edit for "Change in lightness evolution" -plotter2[plot_r[0],:,:]
-axarr[0, 0].imshow(plotter2[plot_r[0],:,:]-plotter2[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
-axarr[0, 1].imshow(plotter2[plot_r[1],:,:]-plotter2[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
-axarr[0, 2].imshow(plotter2[plot_r[2],:,:]-plotter2[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
-axarr[0, 3].imshow(plotter2[plot_r[3],:,:]-plotter2[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
-axarr[0, 4].imshow(plotter2[plot_r[4],:,:]-plotter2[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
-axarr[0, 5].imshow(plotter2[plot_r[5],:,:]-plotter2[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
-axarr[1, 0].imshow(plotter3[plot_r[0],:,:]-plotter3[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
-axarr[1, 1].imshow(plotter3[plot_r[1],:,:]-plotter3[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
-axarr[1, 2].imshow(plotter3[plot_r[2],:,:]-plotter3[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
-axarr[1, 3].imshow(plotter3[plot_r[3],:,:]-plotter3[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
-axarr[1, 4].imshow(plotter3[plot_r[4],:,:]-plotter3[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
-axarr[1, 5].imshow(plotter3[plot_r[5],:,:]-plotter3[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+#axarr[0, 0].imshow(plotter2[plot_r[0],:,:]-plotter2[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+#axarr[0, 1].imshow(plotter2[plot_r[1],:,:]-plotter2[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+#axarr[0, 2].imshow(plotter2[plot_r[2],:,:]-plotter2[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+#axarr[0, 3].imshow(plotter2[plot_r[3],:,:]-plotter2[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+#axarr[0, 4].imshow(plotter2[plot_r[4],:,:]-plotter2[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+#axarr[0, 5].imshow(plotter2[plot_r[5],:,:]-plotter2[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+#axarr[1, 0].imshow(plotter3[plot_r[0],:,:]-plotter3[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+#axarr[1, 1].imshow(plotter3[plot_r[1],:,:]-plotter3[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+#axarr[1, 2].imshow(plotter3[plot_r[2],:,:]-plotter3[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+#axarr[1, 3].imshow(plotter3[plot_r[3],:,:]-plotter3[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+#axarr[1, 4].imshow(plotter3[plot_r[4],:,:]-plotter3[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
+plt.imshow(c[plot_r[5],:,:]-c[plot_r[0],:,:], cmap='gray',vmax=vmaxv,vmin=vminv)
 
 
 """ SCALE CHANGE OF NORMALIZATION OVER TIME """
 plot2max=np.zeros((t_N))
 plot2mean=np.zeros((t_N))
 for i in np.arange(0,t_N-1):
-    plot2max[i]=np.max(plotter2[i,:,:])
-    plot2mean[i]=np.mean(plotter2[i,:,:])
+    plot2max[i]=np.max(c[i,:,:])
+    plot2mean[i]=np.mean(c[i,:,:])
 
 plt.figure(2)
 plt.plot(plot2max)#[0:-1])
@@ -371,48 +392,62 @@ plt.ylabel('intensity value')
 
 """ Luminance edge profiler [ Choose x axis values for cross-sections]"""
 first=0
-second=33
+second=c.shape[1]/2
 third=0
-t = 400 # State of process e.g. t = 400
-gray = stim[30,20]
-plt.figure(filename)#,figsize=[4,13])
+t = t_N -2 # State of process e.g. t = 400
 
-plt.subplot(1,4,1)
-stim1=stim[first,:]
-stim2=stim[second,:]
-stim3=stim[third,:]
-plt.plot(stim1,'r')
-plt.plot(stim2,'b')
-plt.plot(stim3,'g')
-plt.title('Input stimulus')
-plt.ylim([0,0.7])
 
-plt.subplot(1,4,2)
-# plotter2 profile
-first_line=plotter3[t,first,:]
-second_line=plotter3[t,second,:]
-third_line=plotter3[t,third,:]
-plt.plot(first_line,'r')
+#Profile Steady-State Solution
+plt.figure(3)
+plt.subplot(2,1,1)
+second_line=c_out[t,second,:]
 plt.plot(second_line,'b')
-plt.plot(third_line,'g')
-plt.title('Steady-state solution')
-plt.ylim([0,0.7])
+plt.ylim((0.2,0.3))
+plt.subplot(2,1,2)
+plt.imshow(c[t,:,:],cmap='gray')
 
-plt.subplot(1,4,3)
-first_line=plotter3[t,first,:]
-second_line=plotter3[t,second,:]
-third_line=plotter3[t,third,:]
-plt.plot(first_line,'r')
-plt.plot(second_line,'b')
-plt.plot(third_line,'g')
-plt.title('Dynamic solution')
-plt.ylim([0,0.7])
 
-plt.subplot(1,4,4)
-plt.imshow(plotter2[t,:,:],cmap='gray', vmin=0,vmax=1)
-plt.plot(np.arange(0,P.shape[2],1),np.ones(P.shape[2])*first,'r')
-plt.plot(np.arange(0,P.shape[2],1),np.ones(P.shape[2])*second,'b')
-plt.plot(np.arange(0,P.shape[2],1),np.ones(P.shape[2])*third,'g')
-plt.xlim([0,P.shape[2]])
-plt.ylim([0,P.shape[1]])
-plt.title('Output Dynamic solution')
+
+
+
+
+#plt.figure(3)#,figsize=[4,13])
+#plt.subplot(1,4,1)
+#stim1=stim[first,:]
+#stim2=stim[second,:]
+#stim3=stim[third,:]
+#plt.plot(stim1,'r')
+#plt.plot(stim2,'b')
+#plt.plot(stim3,'g')
+#plt.title('Input stimulus')
+#plt.ylim([0.1,0.3])
+#
+#plt.subplot(1,4,2)
+## plotter2 profile
+#first_line=plotter3[t,first,:]
+#second_line=plotter3[t,second,:]
+#third_line=plotter3[t,third,:]
+#plt.plot(first_line,'r')
+#plt.plot(second_line,'b')
+#plt.plot(third_line,'g')
+#plt.title('Steady-state solution')
+#plt.ylim([0.1,0.3])
+#
+#plt.subplot(1,4,3)
+#first_line=plotter3[t,first,:]
+#second_line=plotter3[t,second,:]
+#third_line=plotter3[t,third,:]
+#plt.plot(first_line,'r')
+#plt.plot(second_line,'b')
+#plt.plot(third_line,'g')
+#plt.title('Dynamic solution')
+#plt.ylim([0.1,0.3])
+#
+#plt.subplot(1,4,4)
+#plt.imshow(plotter2[t,:,:],cmap='gray', vmin=0,vmax=np.max(c))
+#plt.plot(np.arange(0,c.shape[2],1),np.ones(c.shape[2])*first,'r')
+#plt.plot(np.arange(0,c.shape[2],1),np.ones(c.shape[2])*second,'b')
+#plt.plot(np.arange(0,c.shape[2],1),np.ones(c.shape[2])*third,'g')
+#plt.xlim([0,c.shape[2]])
+#plt.ylim([0,c.shape[1]])
+#plt.title('Output Dynamic solution')

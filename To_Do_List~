@@ -25,14 +25,15 @@ rather than through a filter?
 To Do List TUB
 -------------------
 - Introduce FIDOs as post processing step in BEATS normalization process, to create more uniform output percepts.
+		First try at this....heavy duty code.... maybe easier to just specify regions and avg. them
+		Then once we have uniform values we can compare these across change in ellipse patch luminance.
+
 
 - Apply generated noisemasks to Various models to test their "Edge noise" dependency
 
 - Change stimuli in context adaptation code to make less context influences
 
 - Normalisation method applied to many different scales of internal patches to create this GRAPH
-
-- Noisemask generators - How does ring bandwidth equate to spatial frequency?
 
 - Define direction of diffuse edges in WI
 

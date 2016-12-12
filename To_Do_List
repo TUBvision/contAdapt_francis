@@ -25,6 +25,8 @@ rather than through a filter?
 To Do List TUB
 -------------------
 - Introduce FIDOs as post processing step in BEATS normalization process, to create more uniform output percepts.
+		First try at this....heavy duty code.... maybe easier to just specify regions and avg. them
+		Then once we have uniform values we can compare these across change in ellipse patch luminance.
 
 - Apply generated noisemasks to Various models to test their "Edge noise" dependency
 
