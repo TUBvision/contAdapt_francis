@@ -23,20 +23,20 @@ def T(lamda,x):
     """
     T Operator function
     ---------------------------------------------------------------------------
-    lambda is a "steering" constant between 3 diffusion behaviour states, as a
+    lambda is a "steering" constant between 2 diffusion behaviour states, as a
     part of the diffusion operator. The consequences of steering being:
     
-    -------------------------------------------------------
-    |lamba |   state   | result on input x                |
-    |------|-----------|----------------------------------|
-    |<0    | max       | Half-wave rectification          |
-    |>0    | min       | Inverse half-wave rectification  |
-    -------------------------------------------------------
-    
+    lamba <0 => max => Half-wave rectification          
+    lamda >0 => min => Inverse half-wave rectification  
+
     Parameters
     ------------    
     lambda : int    steering constant
     x :array-like   input stimulus arrau    
+    
+    Returns
+    ------------
+    array : min/max of input value with zero
     
     """    
     
@@ -48,32 +48,23 @@ def T(lamda,x):
         return np.array([x, minval]).min(axis=0)
         
 
-def Diffusion_operator(lamda,f,t):  
+def Diffusion_operator(lamda,f):  
     """
     Diffusion Operator - 2D Spatially Discrete Non-Linear Diffusion
     ---------------------------------------------------------------------------
     The rectification found in the T operator serves to 
     dictate whether polizing (half-wave rectification) or de-polizing (inverse
-    half-wave rectification) flow states are allowed to occur.
+    half-wave rectification) flow states are allowed to occur - assume
+    state of surround, or enforce state on surround. 
     
     Parameters
     ----------
-    D : int                      diffusion coefficient
-    h : int                      step size
-    t0 : int                     stimulus injection point
-    stimulus : array-like        luminance distribution     
+    lambda : int                 steering contstant
+    f : array-like               input luminance distribution     
     
     Returns
     ----------
-    f : array-like               output of diffusion equation
-    
-    ---------------------------------------------------------------------
-    |lamba |   state                 | result on input x                |
-    |------|-------------------------|----------------------------------|
-    |<0    | positive K(lamda)       | Half-wave rectification          |
-    |>0    | negative K(lamda)       | Inverse half-wave rectification  |
-    ---------------------------------------------------------------------
-    
+    f : array-like               output of diffusion equation    
     """
     # non-linearity (neighbour interactions up/down/left/right)
     f_new = T(lamda,np.roll(f,1, axis=0)-f) \
@@ -154,11 +145,11 @@ for L in np.arange(7):
     
 # Plot example of change in Brightness in each diffusion layer
 plt.figure(2)
-plt.subplot(2,1,3)
+plt.subplot(2,1,1)
 plt.imshow(a-stim,cmap='gray')
 plt.title('Darkness change')
 plt.colorbar()
-plt.subplot(2,2,4)
+plt.subplot(2,1,2)
 plt.imshow(b-stim,cmap='gray')
 plt.title('Brightness change')
 plt.colorbar()

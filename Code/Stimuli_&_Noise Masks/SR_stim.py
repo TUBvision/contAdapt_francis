@@ -3,6 +3,7 @@
 from whitesillusion import degrees_to_pixels
 import numpy as np
 from PIL import Image
+from make_stimulus import add_blob
 
 def SR_stimuli(bg=(50,170),ppd=30,ssf=5,shape=(10,20),radii = (1.5,0.7),
                square =  60,ellipse =(65,104) ,width =100): 
@@ -69,7 +70,12 @@ def SR_stimuli(bg=(50,170),ppd=30,ssf=5,shape=(10,20),radii = (1.5,0.7),
     
     return all_stim_sm
     
-stimulus=SR_stimuli()
+#stimulus=SR_stimuli()
+
+
+stim = add_blob(stimulus[2,:,:], positions=(150, 15, increment_value = 0, inc_type = 'ellipse', patch_radius=17)
+add_blob(stim, positions = {'x': 150, 'y': 450} , increment_value = 0, inc_type = 'ellipse', patch_radius=17)
+
 # Test plotting 
 #import matplotlib.pylab as plt
 #plt.imshow(all_stim_sm[2,:,:],cmap='gray',vmin=0,vmax=1)
