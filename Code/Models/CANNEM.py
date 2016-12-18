@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Translated Python Version of Gregory Francis' contour adaptation FACADE model (2015)
-
--> Extension of Francis and Kim model (2012), where full model description is located.
---> Extension of FACADE (Form And Color and DEpth) model by Grossbery
+Version of Gregory Francis' contour adaptation FACADE model (2015)
+[1] - Insert reference
+Extension of Francis and Kim model (2012), where full model description is located.
+[2] - Insert reference
+Extension of FACADE (Form And Color and DEpth) model by Grossbery
+[3] - Insert reference
 
 Basic usage in CANNEM class, upon code running use below command line script to 
 convert produced images into a gif.
