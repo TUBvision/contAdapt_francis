@@ -1,11 +1,24 @@
 # -*- coding: utf-8 -*-
 """
 Version of Gregory Francis' contour adaptation FACADE model (2015)
-[1] - Insert reference
+[1] - Contour Erasire amd filling-in: Old simulations account for most new 
+        observations - G. Francis (2015)
+
 Extension of Francis and Kim model (2012), where full model description is located.
-[2] - Insert reference
+[2] - Simulations of induced visual scene fading with boundary offset and 
+        filling-in - G. Francis, Jihyun Kim (2012)
+
 Extension of FACADE (Form And Color and DEpth) model by Grossbery
-[3] - Insert reference
+[3] - Neural Dynamics of 3-D Surface Perceptions: Figure-ground separation and 
+        lightness perception - F. Kelly, S. Grossberg (2000)
+            See appendix for equations and in-depth descriptions
+
+Other:
+[4] - Testing the role of luminance edges in White's illusion with contour 
+        adaptation - T. Betz, R. Shapley, F. Wichmann, M. Maertens (2015)
+[5] - Dynamic brightness: induction causes flicker adaptation, but onlt along
+        the edges: Evidence against neural filling in of brightness - 
+        E. Robinsion, V.R. de Sa (2013)
 
 Basic usage in CANNEM class, upon code running use below command line script to 
 convert produced images into a gif.

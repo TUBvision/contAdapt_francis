@@ -1,5 +1,4 @@
 """
-
 ------------------------------------------------------------------------------
 BEATS - Bigger EAts Smaller normalization scheme and lightness model
 ------------------------------------------------------------------------------
@@ -10,6 +9,12 @@ BEATS - Bigger EAts Smaller normalization scheme and lightness model
 - As it stands presently this is functioning as the "dynamic normalization 
   network", a component of the full BEATS method. As such some components of 
   this code are unused, but fit in later to the full model. 
+- dyn_norm is functionally more similar to that of [1] whereas here we look at 
+  the full BEATS model [2]
+  
+[1] - Local to global normalization dynamic by nonlinear local interactions - M.S. Keil
+[2] - Recovering real-world images from single-scale boundaries with a novel filling-in architecture - M.S. Keil
+
 """
 import numpy as np
 import sympy as sp
@@ -161,6 +166,32 @@ def Solve_diff_eq_RK4(stimulus,lamda,t0,h,D,t_N):
             f[n+1,:,:] = f[n,:,:] + (h/6.) * (k1 + 2.*k2 + 2.*k3 + k4)
             t[n+1] = t[n] + h   
         return f
+        
+def solve_diff_eq_Euler(stimulus,lamda,t0,h,D,t_N,dt):
+    """
+    Find solutions to the diffusion equation using Euler method
+    
+    Parameters
+    ---------------
+    stimulus : array_like   input stimuli [x,y] "photo receptor activity elicited by
+                            some real-world luminance distribution"
+    lamda : int             a value between +/- inf
+    t0 : int                point of stimulus "injection"
+    h : int                 Runga-kutta step size
+    N : int                 stimulus array size
+    D : int                 diffusion coefficient weights rate of diffusion [0<D<1]
+    dt : int                time step for Euler method
+    
+    Returns
+    ----------------
+    f : array_like          computed diffused array
+    """
+    f = np.zeros((t_N+1,stimulus.shape[0],stimulus.shape[1])) #[time, equal shape space dimension]
+    if lamda ==0:
+        f = f + dt*(D*flt.laplace(f) + stim*Dirac_delta_test(n-t0))
+    else:
+        f = f + dt*(D*Diffusion_operator(lamda,f) + stim*Dirac_delta_test(n-t0))
+    return f
             
 def ONtype_norm(s,t0,h,D,t_N,a,b,R,dt=1):
     """
@@ -229,12 +260,12 @@ Here is the code to run (Note this may take some time to run)
 D = 0.5  # Diffusion Coefficient [<0.75]
 h = 1     # Runga-Kutta Step [h = 1]
 t0 = 0    # Start time
-t_N = 500 # Length of stimulation [up to 1000 or too much memory used]
+t_N = 150 # Length of stimulation [up to 1000 or too much memory used]
 R = 1     # Regularisation parameter [R = 1]
 
 # Import jpg image or use square wave stimulus
-filename = "\whites_1" # Add your own or look in "contAdapt_francis/Documents/Stimuli" for typical stimuli
-filelocation = "C:\Users\Will\Documents\gitrepos\contAdapt_francis\Documents\Stimuli"
+filename = "/rs" # Add your own or look in "contAdapt_francis/Documents/Stimuli" for typical stimuli
+filelocation = "/home/will/gitrepos/contAdaptTranslation/Documents/Stimuli"
 im = Image.open(("{0}{1}{2}".format(filelocation,filename,".png"))).convert('L')
 
 # Resizing image (smaller) increases speed (but reduces accuracy)
@@ -385,3 +416,12 @@ plt.plot(np.arange(0,c.shape[2],1),np.ones(c.shape[2])*third,'g')
 plt.xlim([0,c.shape[2]])
 plt.ylim([0,c.shape[1]])
 plt.title('Output Dynamic solution')
+
+
+plt.figure(5)
+for n in np.arange(10):
+    plt.subplot(1,10,n)
+    plt.imshow(a[1*n,:,:],cmap='gray')
+
+plt.figure(6)
+plt.imshow(a[10,:,:]-(-1*b[10,:,:]),cmap='gray')

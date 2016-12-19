@@ -44,6 +44,16 @@ various models deal with diffuse edges in their computations.
 
 - Write out justifications for other exploratory work involved and document the code
 
+- add blob stimuli
+- LABEL LABEL LABEL REFERENCE
+- straight line profile across gradients profiles
+- extract gradients of outputs of luminance steps
+- email Keil (intuition on where change in luminance comes from in the model)
+- Also when does the state reach a "stable" darkness/lightness layer?
+- Euler method vs RK4 method
+
+
+
 
 
 

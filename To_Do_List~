@@ -28,7 +28,6 @@ To Do List TUB
 		First try at this....heavy duty code.... maybe easier to just specify regions and avg. them
 		Then once we have uniform values we can compare these across change in ellipse patch luminance.
 
-
 - Apply generated noisemasks to Various models to test their "Edge noise" dependency
 
 - Change stimuli in context adaptation code to make less context influences

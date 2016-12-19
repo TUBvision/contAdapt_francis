@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
 """
 Ring noisemask generate for Fourier space filtering
+
+Inspiration from
+[1] - Noise masking of White's Illusion exposes the weakness of curent spatial 
+      filtering models of lightness perception - T. Betz, R. Shapley, F. Wichmann
+      M. Maertens (2015?)
+        
 """
 from scipy.ndimage.filters import convolve
 import numpy as np
