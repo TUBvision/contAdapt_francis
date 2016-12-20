@@ -34,6 +34,7 @@ Documents
     Fourier rings as noise mas  Description of exploration into development of Fourier rings as noise mask generators
     IOSS debate and rebuttal    Original task assigned and description about why it was flawed, in context of FACADE
     Relevant articles of inter. Various articles I found interesting and helpful in conceptual and contextual understanding
+    T-junction sensistivity in. Description of where T-junction sensitivity comes into the FACADE model
     
 Output_Media
 
