@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 """
+Author: Torsten Betz
+Developed by: Will Baker Morrison
+
+
 Create White's Stimuli & Adaptor slides
 ------------------------------------------------------------------------------
 Taken from Torsten Betz's code and restructured for other applications.

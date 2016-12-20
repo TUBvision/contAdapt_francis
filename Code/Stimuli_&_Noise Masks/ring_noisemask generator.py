@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """
+Author: Will Baker Morrison
+
 Ring noisemask generate for Fourier space filtering
 
 Inspiration from

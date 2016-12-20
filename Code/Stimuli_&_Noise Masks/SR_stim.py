@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Create Shapley Reid stimuli
+Author: Will Baker Morrison
+
+Create Shapley Reid stimuli (slow code - 3 minutes max runtime)
 [1] Context affects lightness at the level of surfaces - M. Maertens, F. A. Wichmann, R. Shapley
 
 Critque

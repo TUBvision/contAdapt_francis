@@ -1,3 +1,5 @@
+# Author; Tortsen Betz
+
 import Image
 import matplotlib.pyplot as plt
 import numpy as np

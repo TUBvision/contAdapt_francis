@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """
+Author: Will Baker Morrison
+
 This is a runfile for the CANNEM model - Francis-Grossberg Model applied to 
 common pyschophysical visual stimuli, extended for White's Illusion.
 

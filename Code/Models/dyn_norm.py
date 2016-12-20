@@ -1,23 +1,31 @@
-# -*- coding: utf-8 -*-
 """
-Simpler (Faster) version of BEATs.py using Euler method and ignore extras
+Author: Will Baker Morrison
+Model: Matthias Keil
 
-Input stimuli taken from "from tester_stim import SR_stimuli" with defaults
+Simpler (Faster) version of BEATs.py using Euler method and ignoring extra
+components. Input stimuli taken from "from tester_stim import SR_stimuli" with 
+default input values. As it is written presently. SR_stim creates 7 SBC images
+with stepped inner patch luminances as found in one of Mariannes papers. It then
+processes these images seperately and plots the outputs
 
 Critique
 --------
-This code doesn't convert luminance [cd/m^2] into gray scale values
+-This code doesn't convert luminance [cd/m^2] into gray scale values
+-Range of computed normalized ellipse values smaller than that of input values
+-Only single point taken within the region [assumed test ptach uniformity]
 
-Range of computed normalized ellipse values smaller than that of input values
-
-Only single point taken within the region [assumed test ptach uniformity]
+References
+---------
+[1] Neural architectures for unifying brightness perception and image processing - Keil (2003)
+[2] Local to global normalization dynamic by nonlinear local interactions - M.S. Keil
+[3] Context affects lightness at the level of surfaces - M. Maertens 
 """
 
 import numpy as np
 import sympy as sp
 import matplotlib.pyplot as plt
 from PIL import Image
-from SR_stim import SR_stimuli
+#from SR_stim import SR_stimuli
     
 def T(lamda,x): 
     """
@@ -85,14 +93,14 @@ def Dirac_delta_test(tester):
         return 1          
             
 # Parameters
-D = 0.5  # Diffusion Coefficient [<0.75]
+D = 0.5   # Diffusion Coefficient [<0.75]
 h = 1     # Runga-Kutta Step [h = 1]
 t0 = 0    # Start time
 t_N = 150 # Length of stimulation [up to 1000 or too much memory used]
 R = 1     # Regularisation parameter [R = 1]
-stimulus=SR_stimuli() # Generate stimuli (see function for variations)
+#stimulus=SR_stimuli() # Generate stimuli (see function for variations)
 
-f_reduce=2# Resize images factor
+f_reduce=2# Resize images factor (for speed
 
 output_lum_ellipse = np.zeros((7,4))
 # Note: with 7 test stimuli this can take some time
@@ -111,12 +119,12 @@ for L in np.arange(7):
     dt=1 # Euler method time step
     
     # a (Darkness diffusion layer)
-    lamda = -1
+    lamda = -1 # for T operator
     a = b =np.zeros_like(stim)
     for n in np.arange(0,t_N,dt):
         a = a + dt*(D*Diffusion_operator(lamda,a) + stim*Dirac_delta_test(n-t0))
     # b (Lightness diffusion layer)
-    lamda = 1    
+    lamda = 1  # for T operator
     for n in np.arange(0,t_N):
         b = b + dt*(D*Diffusion_operator(lamda,b) + stim*Dirac_delta_test(n-t0))
     
@@ -127,16 +135,15 @@ for L in np.arange(7):
     # Regularization parameter
     R=1 
     
-    # Steady-state solution
+    # Steady-state normalisation solution
     c =  (stim-a)/(b-a+R) 
     
-    # Dynamic solution (solved with Euler method)
+    # Dynamic normalistion solution (solved with Euler method)
     cd_out = z = np.zeros_like(c)
     o = np.ones_like(b)
     cd_out = dt*(b*(z-cd_out) - a*(o-cd_out) + stim)    
     
-    # Plot Final States as Luminance Profiles
-    plt.figure(1)
+    plt.figure('Final states as luminance profiles')
     plt.subplot(2,1,1)
     cross_y  = c.shape[0]/2
     plt.plot(c[cross_y,:])
@@ -153,7 +160,7 @@ for L in np.arange(7):
     
     
 # Plot example of change in Brightness in each diffusion layer
-plt.figure(2)
+plt.figure('Diffusion layer change')
 plt.subplot(2,1,1)
 plt.imshow(a-stim,cmap='gray')
 plt.title('Darkness change')
@@ -165,23 +172,33 @@ plt.colorbar()
     
 # Plot change in luminance of ellipse
 inpt = np.linspace(65,104,7)/255
-plt.figure(3)
+plt.figure('Change in normalised inner patch luminance')
 F=1
 plt.subplot(2,1,1)
 plt.plot(inpt,output_lum_ellipse[:,0]*F,'bx',label='left ss')
 plt.plot(inpt,output_lum_ellipse[:,1]*F,'rx',label='right ss')
-plt.subplot(2,1,2)
-plt.plot(inpt,output_lum_ellipse[:,2]*F,'gx',label='left ds')
-plt.plot(inpt,output_lum_ellipse[:,3]*F,'kx',label='right ds')
+coeff = np.zeros((4,2))
+for i in np.arange(2):
+    coeff[i,:] = np.polyfit( inpt, output_lum_ellipse[:,i], 1 ) 
+    p = np.poly1d( coeff[i,:] ) 
+    x = np.linspace( 0, 0.45, 100 ) 
+    plt.plot( x, p(x)) 
 plt.legend()
 plt.xlabel('Input Gray Values')
 plt.ylabel('Normalized Gray Values')
-plt.title('Inner ellipse computation')
+plt.title('Steady state inner ellipse computation')
 
-# Find and plot 1st order line of best fit 
-#coeff = np.zeros((4,2))
-#for i in np.arange(4):
-#    coeff[i,:] = np.polyfit( inpt, output_lum_ellipse[:,i], 1 ) 
-#    p = np.poly1d( coeff[i,:] ) 
-#    x = np.linspace( 0, 0.45, 100 ) 
-#    plt.plot( x, p(x), label='Best Fit Line' ) 
+plt.subplot(2,1,2)
+plt.plot(inpt,output_lum_ellipse[:,2]*F,'gx',label='left ds')
+plt.plot(inpt,output_lum_ellipse[:,3]*F,'kx',label='right ds')
+coeff = np.zeros((4,2))
+for i in np.arange(2,4,1):
+    coeff[i,:] = np.polyfit( inpt, output_lum_ellipse[:,i], 1 ) 
+    p = np.poly1d( coeff[i,:] ) 
+    x = np.linspace( 0, 0.45, 100 ) 
+    plt.plot( x, p(x)) 
+plt.legend()
+plt.xlabel('Input Gray Values')
+plt.ylabel('Normalized Gray Values')
+plt.title('Dynamic inner ellipse computation')
+

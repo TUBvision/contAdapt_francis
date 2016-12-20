@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """
+Author: Will Baker Morrison
+
 Create contour adaptation GIFs, with various stimuli and adapters
 -------------------------------------------------------------------
 Components taken out of the CANNEM model (translated version of G. Francis

@@ -1,48 +1,11 @@
-Developments TUB
-------------------
-- Email from Alejandro
-Same effects produced? Absolute lightness difference? 
-Unsupervised algorithm learns two frequency bands -> used to estimate scene reflectance-illumination
--> averaged spectral range (gaussian) created -> convolved with original image -> feedback systems
--> output images
-
-- Increased complexity of WI stimuli, included blurred edges, and inner patches
-So far no particularly interesting results - other types of stimuli?
-
-- Context Adaptation in Checkboard Stimuli to observe changes in test patch lightness
-
-- Automated GIF generation in CANNEM model
-
-- Remaking Noisemask generators to apply to models
-how to relate D.O.G. bandwidth to spectral frequency. Gaussians not ideal. Explicitly filter whitenoise
-rather than through a filter?
-
-- WI adaptation vertical bars long -> appear to extenuates assimmilation as test patches merge with background
-
-- Write seperate stimuli creator without the model slowing it down -> needs cleaning up
-
-
 To Do List TUB
 -------------------
-- Introduce FIDOs as post processing step in BEATS normalization process, to create more uniform output percepts.
-		First try at this....heavy duty code.... maybe easier to just specify regions and avg. them
-		Then once we have uniform values we can compare these across change in ellipse patch luminance.
+- Add blob stimuli
 
-- Apply generated noisemasks to Various models to test their "Edge noise" dependency
+- email Keil (intuition on where change in luminance comes from in the model)
 
-- Change stimuli in context adaptation code to make less context influences
 
-- Normalisation method applied to many different scales of internal patches to create this GRAPH
 
-- Define direction of diffuse edges in WI
-
-This is relatively exploratory and without firm theoretical underpinnings, but I want to look 
-at how diffuse edges in WI will effect immediate perception of the illusion as well as how the
-various models deal with diffuse edges in their computations.
-
-- General cleaning up and labelling of the code and removing old/excess code
-
-- Write out justifications for other exploratory work involved and document the code
 
 
 

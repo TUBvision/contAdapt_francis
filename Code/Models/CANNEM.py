@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 """
+Author: Will Baker Morrison
+Model: Gregory Francis
+
 Version of Gregory Francis' contour adaptation FACADE model (2015)
 [1] - Contour Erasire amd filling-in: Old simulations account for most new 
         observations - G. Francis (2015)

@@ -1,20 +1,21 @@
 """
+Author: Will Baker Morrison
+Model: Matthias Keil
+
 ------------------------------------------------------------------------------
 BEATS - Bigger EAts Smaller normalization scheme and lightness model
 ------------------------------------------------------------------------------
 - Majority of the code is dedicated to solving various ordinary differential 
   equations (ODE's), which model various synaptic interactions.
-- The solving method chosen here is the Fourth-Order Runga-Kutta (RK4) method. 
-  One of the most robust and accurate method for solving ODE's.
 - As it stands presently this is functioning as the "dynamic normalization 
   network", a component of the full BEATS method. As such some components of 
   this code are unused, but fit in later to the full model. 
 - dyn_norm is functionally more similar to that of [1] whereas here we look at 
-  the full BEATS model [2]
+  the full BEATS model [2], full details in [3]
   
-[1] - Local to global normalization dynamic by nonlinear local interactions - M.S. Keil
-[2] - Recovering real-world images from single-scale boundaries with a novel filling-in architecture - M.S. Keil
-
+[1] Local to global normalization dynamic by nonlinear local interactions - M.S. Keil
+[2] Recovering real-world images from single-scale boundaries with a novel filling-in architecture - M.S. Keil
+[3] Neural architectures for unifying brightness perception and image processing - Keil (2003)
 """
 import numpy as np
 import sympy as sp
@@ -64,7 +65,8 @@ def Diffusion_operator(lamda,f,t):
     de-polarizing". Thus the rectification found in the T operator serves to 
     dictate whether polizing (half-wave rectification) or de-polizing (inverse
     half-wave rectification) flow states are allowed to occur.
-    Parameters
+   
+   Parameters
     ----------
     D : int                      diffusion coefficient
     h : int                      step size
@@ -187,7 +189,7 @@ def solve_diff_eq_Euler(stimulus,lamda,t0,h,D,t_N,dt):
     f : array_like          computed diffused array
     """
     f = np.zeros((t_N+1,stimulus.shape[0],stimulus.shape[1])) #[time, equal shape space dimension]
-    if lamda ==0:
+    if lamda == 0:
         f = f + dt*(D*flt.laplace(f) + stim*Dirac_delta_test(n-t0))
     else:
         f = f + dt*(D*Diffusion_operator(lamda,f) + stim*Dirac_delta_test(n-t0))
@@ -281,6 +283,8 @@ To increase code speed we can employ multiple processors to run simultaneously
 with different diffusion states. 
 
 However on some computers it's just as fast doing a single processor run.
+
+Here you can substitute the RK4 method for Euler (but at the moment it works RK4 decent speed)
 """
 multiple = 'n'
 if multiple == 'y': #multi-processor run
@@ -308,29 +312,6 @@ elif multiple == 'n': #single processor run
 # Two diffusion layers converging to normalized image 
 c, c_out = ONtype_norm(stim,t0,h,D,t_N,a,b,1) # Lightness filling-in
 d, d_out = OFFtype_norm(t_N,a,b,c,stim,1)     # Darkness filling-in
-
-
-""" Later components for full BEATS processing """
-#maxval = np.zeros_like(c)
-#
-#
-## Steady-state half-wave-rectify
-#S_bright = np.array([c, maxval]).max(axis=0)
-#S_dark   = np.array([d, maxval]).min(axis=0)
-#
-## Dynamic state half-wave-rectify
-#S_bright_d = np.array([c_out, maxval]).max(axis=0)
-#S_dark_d   = np.array([d_out, maxval]).min(axis=0)
-#
-## Perceptual activities
-#P = (S_bright-S_dark)/(1+S_bright+S_dark) # Steady-state
-#P_d = (S_bright_d-S_dark_d)/(1+S_bright_d+S_dark_d) # Dynamic
-#
-# Positive values only
-#P  = np.array([P, maxval]).max(axis=0)
-#P_d= np.array([P_d, maxval]).max(axis=0)
-
-
 
 """
 Plotting of outputs
@@ -374,16 +355,17 @@ plt.xlim((-5,t_N))
 first=0
 second=c.shape[1]/2
 third=0
-t = t_N -2 # State of process e.g. t = 400
+x_value = 20 #coordinate of left patch x
+t = 20 # State of process e.g. t = 400
 
 plt.figure('Profiles of Output State')#,figsize=[4,13])
 plt.subplot(1,4,1)
 stim1=stim[first,:]
 stim2=stim[second,:]
 stim3=stim[third,:]
+plt.plot(stim[second,20]*np.ones(stim1.shape),'g')
 plt.plot(stim1,'r')
 plt.plot(stim2,'b')
-plt.plot(stim3,'g')
 plt.title('Input stimulus')
 #plt.ylim([0.1,0.3])
 
@@ -392,9 +374,9 @@ plt.subplot(1,4,2)
 first_line=plotter1[t,first,:]
 second_line=plotter1[t,second,:]
 third_line=plotter1[t,third,:]
+plt.plot(plotter1[t,second,20]*np.ones(stim1.shape),'g')
 plt.plot(first_line,'r')
 plt.plot(second_line,'b')
-plt.plot(third_line,'g')
 plt.title('Steady-state solution')
 #plt.ylim([0.1,0.3])
 
@@ -402,9 +384,9 @@ plt.subplot(1,4,3)
 first_line=plotter2[t,first,:]
 second_line=plotter2[t,second,:]
 third_line=plotter2[t,third,:]
+plt.plot(plotter2[t,second,20]*np.ones(stim1.shape),'g')
 plt.plot(first_line,'r')
 plt.plot(second_line,'b')
-plt.plot(third_line,'g')
 plt.title('Dynamic solution')
 #plt.ylim([0.1,0.3])
 
@@ -417,11 +399,11 @@ plt.xlim([0,c.shape[2]])
 plt.ylim([0,c.shape[1]])
 plt.title('Output Dynamic solution')
 
+plt.figure('Growth of darkness layer')
+for n in np.arange(5):
+    plt.subplot(1,5,n+1)
+    plt.imshow(a[1*n+1,:,:],cmap='gray')
 
-plt.figure(5)
-for n in np.arange(10):
-    plt.subplot(1,10,n)
-    plt.imshow(a[1*n,:,:],cmap='gray')
-
-plt.figure(6)
-plt.imshow(a[10,:,:]-(-1*b[10,:,:]),cmap='gray')
+plt.figure('Difference between diffusion layers')
+plt.imshow(a[10,:,:]-(b[10,:,:]),cmap='gray')
+plt.colorbar()
